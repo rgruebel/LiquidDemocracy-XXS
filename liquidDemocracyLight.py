@@ -62,6 +62,23 @@ def getProposals(eid):
                           for p in proposals]
   return proposalDict
 
+@app.template_filter('getDelegations')
+def getDelegations(eid):
+  q='''START i=node({userID}) MATCH i - [:personDelegation] -> hyperEdge , 
+      hyperEdge-[:delegationPerson]->person,hyperEdge -[r?:delegationProposal|delegationParlament]->type  
+      RETURN ID(hyperEdge),hyperEdge.datetime_created,ID(person), person.username,TYPE(r),ID(type),type.title'''
+  delegations = db.cypher.table(q,dict(i_eid=eid, userID=session['userId']))[1]
+  delegationsDict = [dict(delegationID=p[0],
+                    delegationCreated = date_diff(datetime.utcfromtimestamp(p[1]), datetime.today()), 
+                    username   = p[3], 
+                    p_eid   = p[2],
+                    delegationtype=p[4],
+                    typeID=p[5],
+                    title=p[6]
+                    )
+                          for p in delegations]              
+  return delegationsDict 
+
 @app.template_filter('person2proposals')
 def person2proposals(p_eid):
   ''' all proposals of a given person p_eid in a given instance g.i_eid in descending 
@@ -583,6 +600,26 @@ def add_numbers():
   a = request.args.get('a',0,type=int)
   b = request.args.get('b',0,type=int)
   return jsonify(result=a+b)
+
+@app.route('/<int:i_eid>/debug/<int:prop_id>')
+def debug_vote(prop_id):
+  #Alle votes(positiv/negativ) die zum Vorschlag mit der id prop_id gehen
+  votesq = '''START i=node({propid}) 
+              MATCH p- [:votes] -> i RETURN ID(p)'''
+  #Alle Benutzer die im Pfad der delegationen des aktuellen nutzers sind            
+  delegationq = '''START i=node({userid})  
+                MATCH path=p-[:delegationPerson|personDelegation*]->i 
+                WHERE (p.element_type ="person") 
+                RETURN ID(p)
+                ''' 
+  delegationpath = db.cypher.table(delegationq,dict(userid=session['userId']))[1]
+  votes = db.cypher.table(votesq,dict(propid=prop_id))[1]
+
+  flash(delegationpath)
+
+  flash(votes)
+
+  return redirect(url_for('show_proposals')) 
 
 def initdb():
   users = [p for p in db.people.index.lookup(username=app.config['USERNAME'])]

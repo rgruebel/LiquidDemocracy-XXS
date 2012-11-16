@@ -73,6 +73,34 @@
     <hr>
     <input type=submit value="Delegation erstellen">
     </form>
-
+<table>
+  <h3>Bestehende Delegationen</h3>
+  <tr>
+    <td>Delegant</td>
+    <td>Delegiert für</td>
+    <td>Erstellungsdatum</td>
+    <td></td>
+  </tr>
+  {% for p in g.i_eid|getDelegations %}
+    <tr>
+    <td>{{ p.username }}</td>
+    {% if p.delegationtype=="delegationProposal" %}
+      <td>Vorschlag: {{ p.title }}</td>
+    {% elif p.delegationtype=="delegationParlament" %}
+      <td>Parlament: {{ p.title }}</td>
+      
+      {% else %}
+      <td>Alles</td>
+    {% endif %}
+    <td>{{ p.delegationCreated }}</td>
+    <td>
+<a href=><img src="{{ url_for('static',filename='delete.png') }}" alt="delete" width=24 align=left></a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+    
+    
+    
 {% endblock %}
 
