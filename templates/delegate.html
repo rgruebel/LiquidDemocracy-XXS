@@ -51,8 +51,7 @@
               <input type="radio" name="span" value="proposal">Ein einzelner Vorschlag 
             {% endif %} </p>
               <select name=proposal size=3>
-                {% for p in g.i_eid|getProposals %}
-                  {{ p.title }}
+                {% for p in g.i_eid|getProposals %}                
                   {% if proposal and proposal.title==p.title %}
                   <option value="{{ p.p_eid }}" selected>{{ p.title }}</option>
                   {% else %}
@@ -73,16 +72,25 @@
     <hr>
     <input type=submit value="Delegation erstellen">
     </form>
-<table>
-  <h3>Bestehende Delegationen</h3>
-  <tr>
+
+<table cellspacing="0" cellpadding="10">
+  <h3>Bestehende Delegationen:</h3>
+  <tr style="background-color:#6E6E6E">
     <td>Delegant</td>
     <td>Delegiert für</td>
     <td>Erstellungsdatum</td>
     <td></td>
   </tr>
+  {% set color=False%}
   {% for p in g.i_eid|getDelegations %}
-    <tr>
+    {%if color==True %}
+      <tr style="background-color:#E6E6E6">
+        {% set color=False %}
+    {% elif color ==false %}
+      <tr style="background-color:#FAFAFA">
+    {% set color=True %}
+    {% endif %}
+
     <td>{{ p.username }}</td>
     {% if p.delegationtype=="delegationProposal" %}
       <td>Vorschlag: {{ p.title }}</td>

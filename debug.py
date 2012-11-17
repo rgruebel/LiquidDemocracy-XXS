@@ -36,7 +36,7 @@ def countVotingWeight(personID,proposalID):
 		Die child_list enthaelt am schluss alle ids der gezaehlten Stimmen.
 	'''
 	#Liste welche die eid jeder gueltigen Person(Stimme) enthaelt
-	child_list=[]
+	child_list=[personID]
 	#Alle eids welche beim uebergebenen proposalID bereits selbst gevotet haben(pfad der delegation endet dann)
 	votes=[p.eid for p in db.proposals.get(proposalID).inV('votes')]
 	#Stack der zu zu durchlaufenden nodes, wird erweitert in der Schleife
@@ -57,22 +57,17 @@ def countVotingWeight(personID,proposalID):
 					parlaments=[(p.eid,p.datetime_created) for p in db.proposals.get(proposalID).outV('proposalHasParlament')]
 					parlaments.sort(key=lambda r: r[1],reverse=True)
 					if not parlaments==[] and node.outV('delegationParlament').next().eid == parlaments[0][0]:
-						to_crawl.extend(list(node.inV('personDelegation')))
-					print parlaments	
-					print node.outV('delegationParlament').next().eid				
+						to_crawl.extend(list(node.inV('personDelegation')))			
 				else:
-					#TODO
-					#to_crawl.extend(list(node.inV('personDelegation')))
-					print 'delegation fuer alles'
+					to_crawl.extend(list(node.inV('personDelegation')))
 		elif node.element_type=='person':
 			#Wenn Person selbst gevotet hat Pfad unterbrechen, ansonsten stimme zaehlen und weiter maschieren
 			if not node.eid in votes:
-				print node.username +' hat nicht gevotet'
-				child_list.append(node.eid)
-				to_crawl.extend(list(node.inV('delegationPerson')))
+				if not node.eid in child_list:
+					child_list.append(node.eid)
+					to_crawl.extend(list(node.inV('delegationPerson')))
 			else:
-				print node.username +' hat bereits gevotet'
-			print node.eid
+				pass #User hat bereits gevotet
 	return child_list
 
 def countVotingWeightOld(generator,votes,prop,result):
@@ -113,5 +108,7 @@ def work():
 	else:
 		print test
 #work()
-#print countVotingWeight(25,5)
-print recalculateAffectedVotes()
+voting= countVotingWeight(25,52)
+print voting
+print 'Stimmgewicht ='+str(len(voting))
+#print recalculateAffectedVotes()
