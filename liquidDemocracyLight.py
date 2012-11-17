@@ -541,6 +541,12 @@ def add_parlament():
   return redirect(url_for('show_parlaments'))
 
 
+@app.route('/<int:i_eid>/delegate_overview')
+def delegateOverview():   
+  #return render_template('delegate.html',parlament=parl_eid)
+  print 'hallo'
+  return render_template('delegate.html')
+
 @app.route('/<int:i_eid>/delegate_parlament/<int:parl_eid>')
 def delegateParlament(parl_eid): 
   parlament = db.parlaments.get(parl_eid)
@@ -572,7 +578,7 @@ def delegate():
     flash('Error: You have to specify a person (i.e. the delegate)')
     if parlament and span=='parlament': return render_template('delegate.html', parlament = parlament )
     elif proposal: return render_template('delegate.html', proposal = proposal)
-    else: return render_teplate('delegate.html')
+    else: return render_template('delegate.html')
 
   # Create edges: 
   delegation = db.delegations.create(time=time)
@@ -595,31 +601,21 @@ def delegate():
   flash(flashstr)
   return redirect(url_for('show_proposals')) 
 
+@app.route('/<int:i_eid>/deleteDelegation/<int:eid>')
+def deleteDelegation(eid):
+  for e in db.delegations.get(eid).bothE():
+    db.client.delete_edge(e._id)
+  db.client.delete_vertex(eid)
+  flash('Delegation geloescht')
+
+  return redirect(url_for('delegateOverview'))
+
+
 @app.route('/_add_numbers')
 def add_numbers():
   a = request.args.get('a',0,type=int)
   b = request.args.get('b',0,type=int)
   return jsonify(result=a+b)
-
-@app.route('/<int:i_eid>/debug/<int:prop_id>')
-def debug_vote(prop_id):
-  #Alle votes(positiv/negativ) die zum Vorschlag mit der id prop_id gehen
-  votesq = '''START i=node({propid}) 
-              MATCH p- [:votes] -> i RETURN ID(p)'''
-  #Alle Benutzer die im Pfad der delegationen des aktuellen nutzers sind            
-  delegationq = '''START i=node({userid})  
-                MATCH path=p-[:delegationPerson|personDelegation*]->i 
-                WHERE (p.element_type ="person") 
-                RETURN ID(p)
-                ''' 
-  delegationpath = db.cypher.table(delegationq,dict(userid=session['userId']))[1]
-  votes = db.cypher.table(votesq,dict(propid=prop_id))[1]
-
-  flash(delegationpath)
-
-  flash(votes)
-
-  return redirect(url_for('show_proposals')) 
 
 def initdb():
   users = [p for p in db.people.index.lookup(username=app.config['USERNAME'])]

@@ -94,7 +94,7 @@
     {% endif %}
     <td>{{ p.delegationCreated }}</td>
     <td>
-<a href=><img src="{{ url_for('static',filename='delete.png') }}" alt="delete" width=24 align=left></a>
+<a href="{{ url_for('deleteDelegation',eid=p.delegationID) }}"><img src="{{ url_for('static',filename='delete.png') }}" alt="delete" width=12 align=left></a>
     </td>
   </tr>
   {% endfor %}
