@@ -17,17 +17,37 @@ PASSWORD = 'bla'
 db = Graph()
 
 
-def recalculateAffectedVotes():
-	'''ueberprueft bei welchen Proposals das Voting neu berechent werden muss beim anlegen oder loeschen einer delegation.
-	Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''
-	q= 	'''START i=node({userid}) 
-		MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
-		WHERE (p.element_type="proposal") RETURN distinct ID(p)
-		'''
-	#result = db.cypher.table(q,dict(userid=session['userId']))[1]
-	result = reduce(operator.add, db.cypher.table(q,dict(userid=7))[1])
+def recalculateAffectedVotes(proposalID=None):
+	if proposalID==None:		
+		'''ueberprueft bei welchen Proposals das Voting neu berechent werden muss beim anlegen oder loeschen einer delegation.
+		Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''
+		q= 	'''START i=node({userid}) 
+			MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
+			WHERE (p.element_type="proposal") RETURN distinct ID(p)
+			'''
+		#result = db.cypher.table(q,dict(userid=session['userId']))[1]
+		result = reduce(operator.add, db.cypher.table(q,dict(userid=7))[1])
+	else:
+		result=[proposalID]
 	#TODO:In in schleife Voting aktualisieren
+	for p in result:
+		q='''START i=node({proposalid}) MATCH p-[r:votes]->i RETURN ID(p) AS voterID,r.pro AS pro'''
+		votes=db.cypher.table(q,dict(proposalid=p))[1]
+		downs=0
+		ups=0
+		for v in votes:
+			if v[1]==1:
+				ups+=len(countVotingWeight(v[0],p))
+			elif v[1]==0:
+				downs+=len(countVotingWeight(v[0],p))
+		c_p=db.vertices.get(p)
+		c_p.ups=ups
+		c_p.downs=downs
+		c_p.save() 
 	return result
+
+
+
 #delegationProposal -> priorltaet 1
 #delegationParlament -> prioritaet 2
 #nur delegationPerson -> prioritaet 3
@@ -108,7 +128,12 @@ def work():
 	else:
 		print test
 #work()
-voting= countVotingWeight(25,52)
-print voting
-print 'Stimmgewicht ='+str(len(voting))
+
+#votes=[p.eid for p in db.proposals.get(20).inV('votes')]
+
+
+
+#voting= countVotingWeight(25,52)
+#print voting
+#print 'Stimmgewicht ='+str(len(voting))
 #print recalculateAffectedVotes()

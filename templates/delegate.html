@@ -77,7 +77,7 @@
   <h3>Bestehende Delegationen:</h3>
   <tr style="background-color:#6E6E6E">
     <td>Delegant</td>
-    <td>Delegiert für</td>
+    <td width=550px>Delegiert für</td>
     <td>Erstellungsdatum</td>
     <td></td>
   </tr>
@@ -93,7 +93,7 @@
 
     <td>{{ p.username }}</td>
     {% if p.delegationtype=="delegationProposal" %}
-      <td>Vorschlag: {{ p.title }}</td>
+      <td >Vorschlag: {{ p.title }}</td>
     {% elif p.delegationtype=="delegationParlament" %}
       <td>Parlament: {{ p.title }}</td>
       
