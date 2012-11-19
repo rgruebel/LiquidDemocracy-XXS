@@ -449,6 +449,41 @@ def vote(pro, eid):
     return redirect(url_for('show_single_proposal', prop_id=proposal.eid))
   return redirect(url_for('show_proposals'))
 
+@app.route('/_vote2')
+def vote2():
+  ''' Voting a proposoal or comment with Id eid. Upvote means pro==1, Downvote means pro==0'''
+  pro=request.args.get('pro',0,type=int)
+  eid=request.args.get('eid',0,type=int)
+  voted=0
+  if not session.get('logged_in'):
+    abort(401)
+  loggedUser = db.people.get(session['userId'])
+  c_p = db.vertices.get(eid)             # c_p is a comment or a proposal
+  voteRels = [rel for rel in loggedUser.outE('votes') if rel.inV() == c_p]
+  if voteRels and voteRels[0].pro!=pro:  # i.e.: user undoes vote => delete Edge
+    db.votes.delete(voteRels[0].eid)
+    flash('Stimme rueckgaengig gemacht')
+  if voteRels and voteRels[0].pro==pro:  # i.e.: Voting up/down a second time is not allowed.
+    abort(401)
+  if not voteRels:                       # i.e.: No "votes"-edge exists => create new "votes"-Edge
+    db.votes.create(loggedUser,c_p, pro=pro)
+    voted=1
+    if pro: 
+      flash('Erfolgreich dafuer gestimmt') 
+    else:   
+      flash('Erfolgreich dagegen gestimmt')
+  recalculateAffectedVotes(eid)
+  c_p = db.vertices.get(eid)  
+  if c_p.element_type == 'comment':
+    proposal = c_p.inV('hasComment').next()
+    #return redirect(url_for('show_single_proposal', prop_id=proposal.eid))
+  #return redirect(url_for('show_proposals'))
+
+  list = [
+              {'ups': c_p.ups, 'downs': c_p.downs,'voted':voted},
+             ]
+  return jsonify(results = list)
+
 @app.route('/<int:i_eid>/login',methods=['POST','GET'])
 def login_instance(): 
   error = None
@@ -681,7 +716,12 @@ def deleteDelegation(eid):
 def add_numbers():
   a = request.args.get('a',0,type=int)
   b = request.args.get('b',0,type=int)
-  return jsonify(result=a+b)
+  #return jsonify(result=a+b)
+  list = [
+              {'a': 1, 'b': 2},
+              {'a': 5, 'b': 10}
+             ]
+  return jsonify(results = list)
 
 def initdb():
   users = [p for p in db.people.index.lookup(username=app.config['USERNAME'])]

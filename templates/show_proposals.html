@@ -45,42 +45,75 @@
       <td class=votes align=center width=50> 
       <script type=text/javascript>
       $(function() {
-        $('a#voteup{{ entry.eid }}').bind('click', function() {
+        $('#voteup{{ entry.eid }}').bind('click', function() {
           $.getJSON($SCRIPT_ROOT + '/_vote2', {
             ieid: {{ g.i_eid }}, 
             eid: {{ entry.eid }}, 
             pro: 1
           }, function(data) {
-            $("#voteup{{ entry.eid }}").attr("src", data.imgvoteup);
-            $("#votedown{{ entry.eid }}").attr("src", data.imgvotedown});
-         return false; })
-         });
+            console.log(data)
+            $("#countUp{{ entry.eid }}").text('+'+data.results[0]['ups']);
+            $("#countDown{{ entry.eid }}").text('+'+data.results[0]['downs']);
+            if(data.results[0]['voted']==1)
+            {
+              $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_active.png");
+            }
+            else
+            {
+            $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_inactive.png");
+            }
+          });
+          return false;
+         });});
+
+      $(function() {
+        $('#votedown{{ entry.eid }}').bind('click', function() {
+          $.getJSON($SCRIPT_ROOT + '/_vote2', {
+            ieid: {{ g.i_eid }}, 
+            eid: {{ entry.eid }}, 
+            pro: 0
+          }, function(data) {
+            console.log(data)
+            $("#countUp{{ entry.eid }}").text('+'+data.results[0]['ups']);
+            $("#countDown{{ entry.eid }}").text('+'+data.results[0]['downs']);
+            if(data.results[0]['voted']==1)
+            {
+              $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_active.png");
+            }
+            else
+            {
+            $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_inactive.png");
+            }
+          });
+          return false;
+         });});
       </script>
         <table class=voteCounts>
              <tr>
                <td>
                     {% if entry.username == session.username or not session.username %}
-                       <img id=voteup{{ entry.eid }} src="{{ url_for('static',filename='arrow_up_own.svg') }}" alt="dafuer" width=24 align=left>
+                       <img id=novoteup{{ entry.eid }} src="{{ url_for('static',filename='arrow_up_own.svg') }}" alt="dafuer" width=24 align=left>
                     {% elif not entry.upvoted %}
-                       <a href="{{ url_for('vote', pro=1, eid=entry.eid) }}" class=votePic><img 
-                           id=voteup{{ entry.eid }} src="{{ url_for('static',filename='arrows_up_inactive.png') }}" alt="dafuer" width=24 align=left></a> 
+                       <!--<a href="{{ url_for('vote', pro=1, eid=entry.eid) }}" class=votePic>-->
+                       <img 
+                           id=voteup{{ entry.eid }} src="{{ url_for('static',filename='arrows_up_inactive.png') }}" alt="dafuer" width=24 align=left>
                     {% else %}
                        <img id=voteup{{ entry.eid }} src="{{ url_for('static',filename='arrows_up_active.png') }}" alt="dafuer" width=24 align=left>
                     {% endif %} 
                </td> 
-               <td class=countUp>+{{ entry.ups }}
+               <td id=countUp{{ entry.eid }} class=countUp>+{{ entry.ups }}
                </td> 
              <tr>
                <td>
                {% if entry.username == session.username or not session.username %}
-                 <img id=votedown{{ entry.eid }} src="{{ url_for('static',filename='arrow_down_own.svg') }}" alt="dagegen" width=24 align=left>
+                 <img id=novotedown{{ entry.eid }} src="{{ url_for('static',filename='arrow_down_own.svg') }}" alt="dagegen" width=24 align=left>
                {% elif not entry.downvoted %} 
-                  <a href="{{ url_for('vote', pro=0, eid=entry.eid) }}"><img 
-                       id=votedown{{ entry.eid }} src="{{ url_for('static',filename='arrows_down_inactive.png') }}" alt="dagegen" width=24 align=left></a>
+                  <img 
+                       id=votedown{{ entry.eid }} src="{{ url_for('static',filename='arrows_down_inactive.png') }}" alt="dagegen" width=24 align=left>
                {% else %}
                     <img  id=votedown{{ entry.eid }} src="{{ url_for('static',filename='arrows_down_active.png') }}" alt="dagegen" width=24 align=left>
                {% endif %}
-               </td> <td class=countDown>-{{ entry.downs }}</td>
+               </td> <td id=countDown{{ entry.eid }} class=countDown>-{{ entry.downs }}</td>
              </tr>
         </table>
       </td> 

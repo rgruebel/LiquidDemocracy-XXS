@@ -9,10 +9,25 @@
             b: $('input[name="b"]').val()
           }, function(data) {
             $("#result").text(data.result);
+            console.log(data.results[0])
+              var horst ='horst'
+              $("<div />").html('hallo '+data.results).dialog({ title:"Achtung",modal:true, buttons: [
+                    {
+                        text: "Ok",
+                        click: function() { $(this).dialog("close"); }
+                    },
+                        {
+                        text: "Cancel",
+                        click: function() { $(this).dialog("close"); }
+                    }
+                ] });
           });
           return false;
         });
       });
+      $(document).ready(function() {
+
+        });
     </script>
     <p><input type=text size=5 name=a> +
        <input type=text size=5 name=b> =
