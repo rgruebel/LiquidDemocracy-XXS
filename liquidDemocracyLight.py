@@ -3,6 +3,7 @@ from model import Graph
 from datetime import datetime
 from utils import date_diff
 from collections import deque
+import werkzeug
 import re
 
 # configuration
@@ -701,6 +702,74 @@ def delegate():
                proposalStr+parlamentStr + '" fuer ' + request.form['time']
   flash(flashstr)
   return redirect(url_for('show_proposals')) 
+@app.route('/<int:i_eid>/delegate2',methods=['POST'])
+def delegate2(): 
+  postData=werkzeug.urls.url_decode(request.form['param'],'utf-8')
+  overwrite=int(request.form['overwrite'])
+
+  q='''START i=node({userid}) 
+      MATCH i-[:personDelegation]->d-[?:delegationParlament|delegationProposal]->p,d-[:delegationPerson]->u 
+      RETURN ID(p),p.element_type,ID(d),ID(u)'''
+
+  result=db.cypher.table(q,dict(userid=session['userId']))[1]
+  if overwrite == 0:
+    if postData['span'] == 'proposal':
+      if any(p[0]==int(postData['proposal']) and p[1] == 'proposal' for p in result):
+        return jsonify(results=[{'exists': 1}])
+    elif postData['span']== 'parlament':
+      if any(p[0]==int(postData['parlament']) and p[1] == 'parlament' for p in result):
+        return jsonify(results=[{'exists': 1}])
+    else:
+      if any(p[1] == None for p in result):
+        return jsonify(results=[{'exists': 1}])
+  else:
+    if postData['span'] == 'proposal' or postData['span'] == 'parlament':     
+      delete=[p for p in result if p[0]==int(postData[postData['span']])][0][2]
+      print delete
+    else:
+      delete=[p for p in result if p[1]==None][0][2]
+      print delete
+    for e in db.delegations.get(delete).bothE():
+      db.client.delete_edge(e._id)
+    db.client.delete_vertex(delete)   
+  person = int(postData['person']) if 'person' in postData else None
+  proposal = int(postData['proposal']) if 'proposal' in postData else None
+  parlament = int(postData['parlament']) if 'parlament' in postData else None
+  span = postData['span'] # span is one of 'parlament' / 'proposal' / 'all'
+  time = 0 if postData['time']=='past' else 1 # time is one of 'past' / 'now'
+ 
+  if not person:
+    print "fehler" 
+    flash('Error: You have to specify a person (i.e. the delegate)')
+    if parlament and span=='parlament': return render_template('delegate.html', parlament = parlament )
+    elif proposal: return render_template('delegate.html', proposal = proposal)
+    else: return render_template('delegate.html')
+
+  # Create edges: 
+  delegation = db.delegations.create(time=time)
+  personDelegationEdge = db.personDelegation.create(db.people.get(session['userId']), delegation)
+  delegationPersonEdge = db.delegationPerson.create(delegation, db.people.get(person))
+  if span=='parlament': # make edge from delegation object to parlament
+    delegationParlamentEdge = db.delegationParlament.create(delegation, db.parlaments.get(parlament))
+  elif span=='proposal': # make edge from delegaton object to proposal
+    delegationProposalEdge = db.delegationProposal.create(delegation, db.proposals.get(proposal))
+  # else:   # here span=='all' should hold
+  #    pass # no additonal edges!
+ 
+
+  # Generate feedback
+  personStr = db.people.get(person).username if person else ''
+  proposalStr = db.proposals.get(proposal).title if proposal and span=='proposal' else ''
+  parlamentStr = db.parlaments.get(parlament).title if parlament and span=='parlament' else ''
+  #flashstr = 'Delegation erfolgreich cerstellt: Delegiere "' + personStr + '" fuer ' + span + ' "' +\
+  #             proposalStr+parlamentStr + '" fuer ' + time
+  #flash(flashstr)
+   
+  list = [
+              {'error': 0}
+            ]
+  return jsonify(results = list)
+
 
 @app.route('/<int:i_eid>/deleteDelegation/<int:eid>')
 def deleteDelegation(eid):

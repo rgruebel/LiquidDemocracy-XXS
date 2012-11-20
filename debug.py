@@ -130,8 +130,9 @@ def work():
 #work()
 
 #votes=[p.eid for p in db.proposals.get(20).inV('votes')]
-
-
+q='START i=node({userid}) MATCH i-[:personDelegation]->d-[:delegationParlament|delegationProposal]->p RETURN ID(p),p.element_type,ID(d)'
+result=db.cypher.table(q,dict(userid=1))[1]
+any(p[0]==44 and p[1] == 'parlament' for p in result)
 
 #voting= countVotingWeight(25,52)
 #print voting

@@ -53,15 +53,12 @@
           }, function(data) {
             console.log(data)
             $("#countUp{{ entry.eid }}").text('+'+data.results[0]['ups']);
-            $("#countDown{{ entry.eid }}").text('+'+data.results[0]['downs']);
+            $("#countDown{{ entry.eid }}").text('-'+data.results[0]['downs']);
             if(data.results[0]['voted']==1)
             {
               $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_active.png");
             }
-            else
-            {
             $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_inactive.png");
-            }
           });
           return false;
          });});
@@ -75,15 +72,13 @@
           }, function(data) {
             console.log(data)
             $("#countUp{{ entry.eid }}").text('+'+data.results[0]['ups']);
-            $("#countDown{{ entry.eid }}").text('+'+data.results[0]['downs']);
+            $("#countDown{{ entry.eid }}").text('-'+data.results[0]['downs']);
             if(data.results[0]['voted']==1)
             {
               $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_active.png");
             }
-            else
-            {
             $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_inactive.png");
-            }
+            
           });
           return false;
          });});
@@ -91,9 +86,8 @@
         <table class=voteCounts>
              <tr>
                <td>
-                    {% if entry.username == session.username or not session.username %}
-                       <img id=novoteup{{ entry.eid }} src="{{ url_for('static',filename='arrow_up_own.svg') }}" alt="dafuer" width=24 align=left>
-                    {% elif not entry.upvoted %}
+
+                    {% if not entry.upvoted %}
                        <!--<a href="{{ url_for('vote', pro=1, eid=entry.eid) }}" class=votePic>-->
                        <img 
                            id=voteup{{ entry.eid }} src="{{ url_for('static',filename='arrows_up_inactive.png') }}" alt="dafuer" width=24 align=left>
@@ -105,9 +99,8 @@
                </td> 
              <tr>
                <td>
-               {% if entry.username == session.username or not session.username %}
-                 <img id=novotedown{{ entry.eid }} src="{{ url_for('static',filename='arrow_down_own.svg') }}" alt="dagegen" width=24 align=left>
-               {% elif not entry.downvoted %} 
+
+               {% if not entry.downvoted %} 
                   <img 
                        id=votedown{{ entry.eid }} src="{{ url_for('static',filename='arrows_down_inactive.png') }}" alt="dagegen" width=24 align=left>
                {% else %}

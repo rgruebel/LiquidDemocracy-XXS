@@ -2,7 +2,8 @@
 {% block body %}
 
 <h1> Delegation </h1>
-    <form action="{{ url_for('delegate') }}" method=post class=add-entry>
+
+    <form action="{{ url_for('delegate2') }}" id="delegationForm" method=post class=add-entry>
     <table>
     <tr valign=top> 
       <td width=150px>
@@ -72,7 +73,51 @@
     <hr>
     <input type=submit value="Delegation erstellen">
     </form>
+<script>
+  /* attach a submit handler to the form */
+  $("#delegationForm").submit(function(event) {
 
+    /* stop form from submitting normally */
+    event.preventDefault(); 
+        
+    /* get some values from elements on the page: */
+    var $form = $( this ),
+        url = $form.attr( 'action' );
+
+    /* Send the data using post and put the results in a div */
+    $.post( url, { 'param': $("#delegationForm").serialize(),'overwrite':0},
+      function( data ) {
+          console.log(data.results[0]['exists']);
+          if(data.results[0]['exists']==1)
+          {
+                    $("<div />").html('Delegation bereits vorhanden. Überschreiben?').dialog({ title:"Achtung",modal:true, buttons: [
+                    {
+                        text: "Ok",
+                        click: function() { 
+                            $.post( url, { 'param': $("#delegationForm").serialize(),'overwrite':1},
+                              function( data ) {
+                                location.reload();
+                              }
+                            );
+
+                          $(this).dialog("close");   
+                        }
+                    },
+                        {
+                        text: "Cancel",
+                        click: function() { $(this).dialog("close"); }
+                    }
+                ] });
+          }
+          else
+          {
+            console.log('existiert nicht')
+          }
+
+      }
+    );
+  });
+</script>
 <table cellspacing="0" cellpadding="10">
   <h3>Bestehende Delegationen:</h3>
   <tr style="background-color:#6E6E6E">
