@@ -77,8 +77,8 @@ def countVotingWeight(personID,proposalID):
 					parlaments=[(p.eid,p.datetime_created) for p in db.proposals.get(proposalID).outV('proposalHasParlament')]
 					parlaments.sort(key=lambda r: r[1],reverse=True)
 					if not parlaments==[] and node.outV('delegationParlament').next().eid == parlaments[0][0]:
-						to_crawl.extend(list(node.inV('personDelegation')))			
-				else:
+						to_crawl.extend(list(node.inV('personDelegation')))		
+				elif not any(x.element_type=='proposal' for x in delegationDetail):
 					to_crawl.extend(list(node.inV('personDelegation')))
 		elif node.element_type=='person':
 			#Wenn Person selbst gevotet hat Pfad unterbrechen, ansonsten stimme zaehlen und weiter maschieren

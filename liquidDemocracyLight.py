@@ -5,7 +5,7 @@ from utils import date_diff
 from collections import deque
 import werkzeug
 import re
-
+import operator
 # configuration
 DATABASE = 'graphdatabase'
 DEBUG = True
@@ -295,7 +295,7 @@ def countVotingWeight(personID,proposalID):
           parlaments.sort(key=lambda r: r[1],reverse=True)
           if not parlaments==[] and node.outV('delegationParlament').next().eid == parlaments[0][0]:
             to_crawl.extend(list(node.inV('personDelegation')))     
-        else:
+        elif not any(x.element_type=='proposal' for x in delegationDetail):
           to_crawl.extend(list(node.inV('personDelegation')))
     elif node.element_type=='person':
       #Wenn Person selbst gevotet hat Pfad unterbrechen, ansonsten stimme zaehlen und weiter maschieren
@@ -306,20 +306,18 @@ def countVotingWeight(personID,proposalID):
       else:
         pass #User hat bereits gevotet
   return child_list
+def affectedVotes():
+  '''ueberprueft bei welchen Proposals das Voting neu berechent werden muss beim anlegen oder loeschen einer delegation.
+  Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''
+  q=  '''START i=node({userid}) 
+    MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
+    WHERE (p.element_type="proposal") RETURN distinct ID(p)
+    '''
+  return reduce(operator.add, db.cypher.table(q,dict(userid=session['userId']))[1])
 
-def recalculateAffectedVotes(proposalID=None):
-  if proposalID==None:    
-    '''ueberprueft bei welchen Proposals das Voting neu berechent werden muss beim anlegen oder loeschen einer delegation.
-    Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''
-    q=  '''START i=node({userid}) 
-      MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
-      WHERE (p.element_type="proposal") RETURN distinct ID(p)
-      '''
-    #result = db.cypher.table(q,dict(userid=session['userId']))[1]
-    result = reduce(operator.add, db.cypher.table(q,dict(userid=session['userId']))[1])
-  else:
-    result=[proposalID]
-  #TODO:In in schleife Voting aktualisieren
+def recalculateAffectedVotes(result):
+  '''Berechnet die uebergebenden Proposals neu'''
+
   for p in result:
     q='''START i=node({proposalid}) MATCH p-[r:votes]->i RETURN ID(p) AS voterID,r.pro AS pro'''
     votes=db.cypher.table(q,dict(proposalid=p))[1]
@@ -473,7 +471,7 @@ def vote2():
       flash('Erfolgreich dafuer gestimmt') 
     else:   
       flash('Erfolgreich dagegen gestimmt')
-  recalculateAffectedVotes(eid)
+  recalculateAffectedVotes([eid])
   c_p = db.vertices.get(eid)  
   if c_p.element_type == 'comment':
     proposal = c_p.inV('hasComment').next()
@@ -710,7 +708,7 @@ def delegate2():
   q='''START i=node({userid}) 
       MATCH i-[:personDelegation]->d-[?:delegationParlament|delegationProposal]->p,d-[:delegationPerson]->u 
       RETURN ID(p),p.element_type,ID(d),ID(u)'''
-
+  delete=None
   result=db.cypher.table(q,dict(userid=session['userId']))[1]
   if overwrite == 0:
     if postData['span'] == 'proposal':
@@ -729,9 +727,7 @@ def delegate2():
     else:
       delete=[p for p in result if p[1]==None][0][2]
       print delete
-    for e in db.delegations.get(delete).bothE():
-      db.client.delete_edge(e._id)
-    db.client.delete_vertex(delete)   
+  
   person = int(postData['person']) if 'person' in postData else None
   proposal = int(postData['proposal']) if 'proposal' in postData else None
   parlament = int(postData['parlament']) if 'parlament' in postData else None
@@ -755,8 +751,16 @@ def delegate2():
     delegationProposalEdge = db.delegationProposal.create(delegation, db.proposals.get(proposal))
   # else:   # here span=='all' should hold
   #    pass # no additonal edges!
- 
 
+  affected=affectedVotes()
+  #Delete old delegation
+  if not delete is None:
+    print 'loeschen'
+    for e in db.delegations.get(delete).bothE():
+      db.client.delete_edge(e._id)
+    db.client.delete_vertex(delete)
+     
+  recalculateAffectedVotes(affected)
   # Generate feedback
   personStr = db.people.get(person).username if person else ''
   proposalStr = db.proposals.get(proposal).title if proposal and span=='proposal' else ''
@@ -766,18 +770,19 @@ def delegate2():
   #flash(flashstr)
    
   list = [
-              {'error': 0}
+              {'exists': 0}
             ]
   return jsonify(results = list)
 
 
 @app.route('/<int:i_eid>/deleteDelegation/<int:eid>')
 def deleteDelegation(eid):
+  affected=affectedVotes()
   for e in db.delegations.get(eid).bothE():
     db.client.delete_edge(e._id)
   db.client.delete_vertex(eid)
   flash('Delegation geloescht')
-
+  recalculateAffectedVotes(affected)
   return redirect(url_for('delegateOverview'))
 
 

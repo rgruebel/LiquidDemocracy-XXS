@@ -65,7 +65,7 @@
                {% else %}
                     <img id=votedown{{ proposal.eid }} src="{{ url_for('static',filename='arrows_down_active.png') }}" alt="dagegen" width=28 align=left>
                {% endif %}
-                </td> <td id=countDown{{ proposal.eid }} class=countDown>{{ proposal.downs }}</td>
+                </td> <td id=countDown{{ proposal.eid }} class=countDown>-{{ proposal.downs }}</td>
               </tr>
            </table>
           </td> <td><h3><a href="{{ url_for('show_single_proposal', i_eid=g.i_eid, prop_id=proposal.eid) }}"
