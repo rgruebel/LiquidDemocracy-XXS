@@ -665,46 +665,6 @@ def delegatePerson(p_eid):
 
 @app.route('/<int:i_eid>/delegate',methods=['POST'])
 def delegate(): 
-  ''' Create delegation edges and vertices
-      There are three cases:
-      1. Delegation of a person for all proposals
-      2. Delegation of a person for all proposals of a specific parlament
-      3. Delegation of a person for a single proposal
-  '''
-  person = request.form['person'] if 'person' in request.form else None
-  proposal = request.form['proposal'] if 'proposal' in request.form else None
-  parlament = request.form['parlament'] if 'parlament' in request.form else None
-  span = request.form['span'] # span is one of 'parlament' / 'proposal' / 'all'
-  time = 0 if request.form['time']=='past' else 1 # time is one of 'past' / 'now'
- 
-  if not person: 
-    flash('Error: You have to specify a person (i.e. the delegate)')
-    if parlament and span=='parlament': return render_template('delegate.html', parlament = parlament )
-    elif proposal: return render_template('delegate.html', proposal = proposal)
-    else: return render_template('delegate.html')
-
-  # Create edges: 
-  delegation = db.delegations.create(time=time)
-  personDelegationEdge = db.personDelegation.create(db.people.get(session['userId']), delegation)
-  delegationPersonEdge = db.delegationPerson.create(delegation, db.people.get(person))
-  if span=='parlament': # make edge from delegation object to parlament
-    delegationParlamentEdge = db.delegationParlament.create(delegation, db.parlaments.get(parlament))
-  elif span=='proposal': # make edge from delegaton object to proposal
-    delegationProposalEdge = db.delegationProposal.create(delegation, db.proposals.get(proposal))
-  # else:   # here span=='all' should hold
-  #    pass # no additonal edges!
- 
-
-  # Generate feedback
-  personStr = db.people.get(person).username if person else ''
-  proposalStr = db.proposals.get(proposal).title if proposal and span=='proposal' else ''
-  parlamentStr = db.parlaments.get(parlament).title if parlament and span=='parlament' else ''
-  flashstr = 'Delegation erfolgreich cerstellt: Delegiere "' + personStr + '" fuer ' + span + ' "' +\
-               proposalStr+parlamentStr + '" fuer ' + request.form['time']
-  flash(flashstr)
-  return redirect(url_for('show_proposals')) 
-@app.route('/<int:i_eid>/delegate2',methods=['POST'])
-def delegate2(): 
   postData=werkzeug.urls.url_decode(request.form['param'],'utf-8')
   overwrite=int(request.form['overwrite'])
 
@@ -790,7 +750,14 @@ def deleteDelegation(eid):
     db.client.delete_edge(e._id)
   db.client.delete_vertex(eid)
   flash('Delegation geloescht')
-  recalculateAffectedVotes(affected)
+  #recalculateAffectedVotes(affected)
+  def bgrWorker(req,aff):
+      with app.test_request_context():
+        from flask import request
+        request = req
+        recalculateAffectedVotes(aff)
+
+  thread.start_new_thread(bgrWorker, (request,affected))
   return redirect(url_for('delegateOverview'))
 
 
