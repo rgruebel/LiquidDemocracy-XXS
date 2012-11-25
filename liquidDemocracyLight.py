@@ -426,33 +426,8 @@ def add_comment(prop_id):
   flash('Neuer Kommentar erfolgreich erstellt')
   return redirect(url_for('show_single_proposal', prop_id=prop_id))
 
-@app.route('/<int:i_eid>/vote/<int:pro>/<int:eid>')
-def vote(pro, eid):
-  ''' Voting a proposoal or comment with Id eid. Upvote means pro==1, Downvote means pro==0'''
-  if not session.get('logged_in'):
-    abort(401)
-  loggedUser = db.people.get(session['userId'])
-  c_p = db.vertices.get(eid)             # c_p is a comment or a proposal
-  voteRels = [rel for rel in loggedUser.outE('votes') if rel.inV() == c_p]
-  if voteRels and voteRels[0].pro!=pro:  # i.e.: user undoes vote => delete Edge
-    db.votes.delete(voteRels[0].eid)
-    flash('Stimme rueckgaengig gemacht')
-  if voteRels and voteRels[0].pro==pro:  # i.e.: Voting up/down a second time is not allowed.
-    abort(401)
-  if not voteRels:                       # i.e.: No "votes"-edge exists => create new "votes"-Edge
-    db.votes.create(loggedUser,c_p, pro=pro)
-    if pro: 
-      flash('Erfolgreich dafuer gestimmt') 
-    else:   
-      flash('Erfolgreich dagegen gestimmt')
-  recalculateAffectedVotes(eid)
-  if c_p.element_type == 'comment':
-    proposal = c_p.inV('hasComment').next()
-    return redirect(url_for('show_single_proposal', prop_id=proposal.eid))
-  return redirect(url_for('show_proposals'))
-
-@app.route('/_vote2')
-def vote2():
+@app.route('/_vote')
+def vote():
   ''' Voting a proposoal or comment with Id eid. Upvote means pro==1, Downvote means pro==0'''
   pro=request.args.get('pro',0,type=int)
   eid=request.args.get('eid',0,type=int)

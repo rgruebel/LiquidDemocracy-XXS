@@ -10,7 +10,7 @@
       <script type=text/javascript>
       $(function() {
         $('#voteup{{ proposal.eid }}').bind('click', function() {
-          $.getJSON($SCRIPT_ROOT + '/_vote2', {
+          $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ proposal.eid }}, 
             pro: 1
@@ -29,7 +29,7 @@
 
       $(function() {
         $('#votedown{{ proposal.eid }}').bind('click', function() {
-          $.getJSON($SCRIPT_ROOT + '/_vote2', {
+          $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ proposal.eid }}, 
             pro: 0
