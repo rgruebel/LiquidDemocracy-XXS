@@ -4,8 +4,10 @@ from datetime import datetime
 from utils import date_diff
 from collections import deque
 import werkzeug
+import thread
 import re
 import operator
+import time
 # configuration
 DATABASE = 'graphdatabase'
 DEBUG = True
@@ -272,6 +274,7 @@ def countVotingWeight(personID,proposalID):
   '''Zaehlt das Stimmgewicht der uebergebenen Person bei dem uerbegebenen Vorschlag.
     Die child_list enthaelt am schluss alle ids der gezaehlten Stimmen.
   '''
+  db=Graph()
   #Liste welche die eid jeder gueltigen Person(Stimme) enthaelt
   child_list=[personID]
   #Alle eids welche beim uebergebenen proposalID bereits selbst gevotet haben(pfad der delegation endet dann)
@@ -317,7 +320,7 @@ def affectedVotes():
 
 def recalculateAffectedVotes(result):
   '''Berechnet die uebergebenden Proposals neu'''
-
+  db=Graph()
   for p in result:
     q='''START i=node({proposalid}) MATCH p-[r:votes]->i RETURN ID(p) AS voterID,r.pro AS pro'''
     votes=db.cypher.table(q,dict(proposalid=p))[1]
@@ -732,7 +735,7 @@ def delegate2():
   proposal = int(postData['proposal']) if 'proposal' in postData else None
   parlament = int(postData['parlament']) if 'parlament' in postData else None
   span = postData['span'] # span is one of 'parlament' / 'proposal' / 'all'
-  time = 0 if postData['time']=='past' else 1 # time is one of 'past' / 'now'
+  time2 = 0 if postData['time']=='past' else 1 # time is one of 'past' / 'now'
  
   if not person:
     print "fehler" 
@@ -742,7 +745,7 @@ def delegate2():
     else: return render_template('delegate.html')
 
   # Create edges: 
-  delegation = db.delegations.create(time=time)
+  delegation = db.delegations.create(time=time2)
   personDelegationEdge = db.personDelegation.create(db.people.get(session['userId']), delegation)
   delegationPersonEdge = db.delegationPerson.create(delegation, db.people.get(person))
   if span=='parlament': # make edge from delegation object to parlament
@@ -759,8 +762,13 @@ def delegate2():
     for e in db.delegations.get(delete).bothE():
       db.client.delete_edge(e._id)
     db.client.delete_vertex(delete)
-     
-  recalculateAffectedVotes(affected)
+  def bgrWorker(req,aff):
+      with app.test_request_context():
+        from flask import request
+        request = req
+        recalculateAffectedVotes(aff)
+
+  thread.start_new_thread(bgrWorker, (request,affected))
   # Generate feedback
   personStr = db.people.get(person).username if person else ''
   proposalStr = db.proposals.get(proposal).title if proposal and span=='proposal' else ''
