@@ -12,9 +12,7 @@
         <br>
         <dd><select name=person size=3>
           {% for p in g.i_eid|getPeople %}
-            {% if person and person.username==p.username %}
-            <option value="{{ p.p_eid }}" selected>{{ p.username }}</option>
-            {% else %}
+            {% if p.username != session.username%}
             <option value="{{ p.p_eid }}">{{ p.username }}</option>
             {% endif %}
           {% endfor %}
