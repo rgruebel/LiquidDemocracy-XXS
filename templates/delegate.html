@@ -10,9 +10,11 @@
       <dl>
         <dt> <h4>An welche Person delegieren?</h4>
         <br>
-        <dd><select name=person size=3>
+        <dd><select name="person" id="person" size=3>
           {% for p in g.i_eid|getPeople %}
-            {% if p.username != session.username%}
+            {% if person and person==p.p_eid %}
+            <option value="{{ p.p_eid }}" selected>{{ p.username }}</option>
+            {% elif p.username != session.username%}
             <option value="{{ p.p_eid }}">{{ p.username }}</option>
             {% endif %}
           {% endfor %}
@@ -25,7 +27,11 @@
       <h4> Auf welche Vorschläge delegieren? </h4>
         <tr valign=top> 
           <td width=70px><p style="text-indent:-23px;">
-            <input type="radio" name="span" value="all">Alle</p>
+            {% if person or overview %}
+              <input type="radio" name="span" value="all" checked>Alle</p>
+            {% else %}
+              <input type="radio" name="span" value="all">Alle</p>
+            {% endif %}
           </td>
           <td width=200px> <p style="text-indent:-23px;">
             {% if parlament %}
@@ -33,7 +39,7 @@
             {% else %} 
               <input type="radio" name="span" value="parlament"> Alle Vorschläge eines Parlaments: 
             {% endif %}</p> 
-              <select name=parlament size=3>
+              <select name="parlament" id="parlament" size=3>
                 {% for p in g.i_eid|getParlaments %}
                   {% if parlament and parlament|parlamentTitle==p.title %}
                   <option value="{{ p.eid }}" selected>{{ p.title }}</option>
@@ -49,9 +55,9 @@
             {% else %}
               <input type="radio" name="span" value="proposal">Ein einzelner Vorschlag 
             {% endif %} </p>
-              <select name=proposal size=3>
+              <select name="proposal" id="proposal" size=3>
                 {% for p in g.i_eid|getProposals %}                
-                  {% if proposal and proposal.title==p.title %}
+                  {% if proposal and proposal==p.p_eid %}
                   <option value="{{ p.p_eid }}" selected>{{ p.title }}</option>
                   {% else %}
                   <option value="{{ p.p_eid }}">{{ p.title }}</option>
@@ -64,11 +70,6 @@
       </td> 
     </tr>
     </table>
-    <hr>
-    <h4> Ab wann delegieren?</h4> 
-      <input type="radio" name="time" value="now" checked> Ab jetzt</input> <br>
-      <input type="radio" name="time" value="past"> Vergangenheit mit einbeziehen</input> 
-    <hr>
     <input type=submit value="Delegation erstellen">
     </form>
 <script>
@@ -82,6 +83,39 @@
     var $form = $( this ),
         url = $form.attr( 'action' );
 
+    var span = $('input:radio[name=span]:checked').val();
+    var message;
+    if(span == 'proposal')
+    {
+      if($("#proposal option:selected").val() ==null)
+      {
+        message= message==null ? 'Vorschlag auswählen<br>' : message+'Vorschlag auswählen<br>';
+      }
+    }
+    else if(span == 'parlament') {
+
+      if($("#parlament option:selected").val()==null)
+      {
+
+        message= message==null ? 'Parlament auswählen<br>' : message+'Parlament auswählen<br>';
+      }
+    }
+
+    if($("#person option:selected").val()==null)
+    {
+        message= message==null ? 'Person auswählen<br>' : message+'Person auswählen<br>';
+    }
+    if(message)
+    {
+      $("<div />").html(message).dialog({ title:"Fehlende Angaben",modal:true, buttons: [
+            {
+                text: "Ok",
+                click: function() { $(this).dialog("close"); }
+            }
+        ] });
+      return;
+    }
+    
     /* Send the data using post and put the results in a div */
     $.post( url, { 'param': $("#delegationForm").serialize(),'overwrite':0},
       function( data ) {
@@ -116,6 +150,7 @@
     );
   });
 </script>
+<hr>
 <table cellspacing="0" cellpadding="10">
   <h3>Bestehende Delegationen:</h3>
   <tr style="background-color:#6E6E6E">

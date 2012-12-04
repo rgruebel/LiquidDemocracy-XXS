@@ -439,16 +439,18 @@ def vote():
   voteRels = [rel for rel in loggedUser.outE('votes') if rel.inV() == c_p]
   if voteRels and voteRels[0].pro!=pro:  # i.e.: user undoes vote => delete Edge
     db.votes.delete(voteRels[0].eid)
-    flash('Stimme rueckgaengig gemacht')
+    #flash('Stimme rueckgaengig gemacht')
   if voteRels and voteRels[0].pro==pro:  # i.e.: Voting up/down a second time is not allowed.
     abort(401)
   if not voteRels:                       # i.e.: No "votes"-edge exists => create new "votes"-Edge
     db.votes.create(loggedUser,c_p, pro=pro)
     voted=1
     if pro: 
-      flash('Erfolgreich dafuer gestimmt') 
+      #flash('Erfolgreich dafuer gestimmt')
+      pass 
     else:   
-      flash('Erfolgreich dagegen gestimmt')
+      #flash('Erfolgreich dagegen gestimmt')
+      pass
   recalculateAffectedVotes([eid])
   c_p = db.vertices.get(eid)  
   if c_p.element_type == 'comment':
@@ -621,9 +623,7 @@ def add_parlament():
 
 @app.route('/<int:i_eid>/delegate_overview')
 def delegateOverview():   
-  #return render_template('delegate.html',parlament=parl_eid)
-  print 'hallo'
-  return render_template('delegate.html')
+  return render_template('delegate.html', overview=True)
 
 @app.route('/<int:i_eid>/delegate_parlament/<int:parl_eid>')
 def delegateParlament(parl_eid): 
@@ -670,17 +670,9 @@ def delegate():
   proposal = int(postData['proposal']) if 'proposal' in postData else None
   parlament = int(postData['parlament']) if 'parlament' in postData else None
   span = postData['span'] # span is one of 'parlament' / 'proposal' / 'all'
-  time2 = 0 if postData['time']=='past' else 1 # time is one of 'past' / 'now'
  
-  if not person:
-    print "fehler" 
-    flash('Error: You have to specify a person (i.e. the delegate)')
-    if parlament and span=='parlament': return render_template('delegate.html', parlament = parlament )
-    elif proposal: return render_template('delegate.html', proposal = proposal)
-    else: return render_template('delegate.html')
-
   # Create edges: 
-  delegation = db.delegations.create(time=time2)
+  delegation = db.delegations.create()
   personDelegationEdge = db.personDelegation.create(db.people.get(session['userId']), delegation)
   delegationPersonEdge = db.delegationPerson.create(delegation, db.people.get(person))
   if span=='parlament': # make edge from delegation object to parlament
@@ -693,7 +685,6 @@ def delegate():
   affected=affectedVotes()
   #Delete old delegation
   if not delete is None:
-    print 'loeschen'
     for e in db.delegations.get(delete).bothE():
       db.client.delete_edge(e._id)
     db.client.delete_vertex(delete)
@@ -704,14 +695,7 @@ def delegate():
         recalculateAffectedVotes(aff)
 
   thread.start_new_thread(bgrWorker, (request,affected))
-  # Generate feedback
-  personStr = db.people.get(person).username if person else ''
-  proposalStr = db.proposals.get(proposal).title if proposal and span=='proposal' else ''
-  parlamentStr = db.parlaments.get(parlament).title if parlament and span=='parlament' else ''
-  #flashstr = 'Delegation erfolgreich cerstellt: Delegiere "' + personStr + '" fuer ' + span + ' "' +\
-  #             proposalStr+parlamentStr + '" fuer ' + time
-  #flash(flashstr)
-   
+  
   list = [
               {'exists': 0}
             ]
