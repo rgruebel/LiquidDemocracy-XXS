@@ -88,7 +88,6 @@
                <td>
 
                     {% if not entry.upvoted %}
-                       <!--<a href="{{ url_for('vote', pro=1, eid=entry.eid) }}" class=votePic>-->
                        <img 
                            id=voteup{{ entry.eid }} src="{{ url_for('static',filename='arrows_up_inactive.png') }}" alt="dafuer" width=24 align=left>
                     {% else %}
