@@ -314,7 +314,7 @@ def affectedVotes():
   Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''
   q=  '''START i=node({userid}) 
     MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
-    WHERE (p.element_type="proposal") RETURN distinct ID(p)
+    WHERE (p.element_type="proposal" or p.element_type="comment") RETURN distinct ID(p)
     '''
   return reduce(operator.add, db.cypher.table(q,dict(userid=session['userId']))[1])
 
@@ -326,11 +326,15 @@ def recalculateAffectedVotes(result):
     votes=db.cypher.table(q,dict(proposalid=p))[1]
     downs=0
     ups=0
+    if db.proposals.get(p).element_type == 'comment':
+      countId=db.proposals.get(p).inV('hasComment').next().eid
+    else:
+      countId=p
     for v in votes:
       if v[1]==1:
-        ups+=len(countVotingWeight(v[0],p))
+        ups+=len(countVotingWeight(v[0],countId))
       elif v[1]==0:
-        downs+=len(countVotingWeight(v[0],p))
+        downs+=len(countVotingWeight(v[0],countId))
     c_p=db.vertices.get(p)
     c_p.ups=ups
     c_p.downs=downs
