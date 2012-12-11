@@ -138,3 +138,5 @@ any(p[0]==44 and p[1] == 'parlament' for p in result)
 #print voting
 #print 'Stimmgewicht ='+str(len(voting))
 #print recalculateAffectedVotes()
+for x in db.delegations.get_all():
+	db.client.delete_vertex(x.eid)

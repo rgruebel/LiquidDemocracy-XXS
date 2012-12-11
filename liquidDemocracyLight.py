@@ -674,9 +674,11 @@ def delegate():
   proposal = int(postData['proposal']) if 'proposal' in postData else None
   parlament = int(postData['parlament']) if 'parlament' in postData else None
   span = postData['span'] # span is one of 'parlament' / 'proposal' / 'all'
- 
+  
+
   # Create edges: 
   delegation = db.delegations.create()
+  db.instanceHasDelegation.create(db.instances.get(g.i_eid),delegation)
   personDelegationEdge = db.personDelegation.create(db.people.get(session['userId']), delegation)
   delegationPersonEdge = db.delegationPerson.create(delegation, db.people.get(person))
   if span=='parlament': # make edge from delegation object to parlament
@@ -689,8 +691,6 @@ def delegate():
   affected=affectedVotes()
   #Delete old delegation
   if not delete is None:
-    for e in db.delegations.get(delete).bothE():
-      db.client.delete_edge(e._id)
     db.client.delete_vertex(delete)
   def bgrWorker(req,aff):
       with app.test_request_context():
@@ -709,8 +709,6 @@ def delegate():
 @app.route('/<int:i_eid>/deleteDelegation/<int:eid>')
 def deleteDelegation(eid):
   affected=affectedVotes()
-  for e in db.delegations.get(eid).bothE():
-    db.client.delete_edge(e._id)
   db.client.delete_vertex(eid)
   flash('Delegation geloescht')
   #recalculateAffectedVotes(affected)

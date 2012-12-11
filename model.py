@@ -103,9 +103,10 @@ class InstanceHasParlament(Relationship):
 
 class Delegation(Node):
   element_type = "delegation"
-  time = Integer() # 0: including past; 
-                   # 1: excluding past; up from now on.
   datetime_created=DateTime(default=current_datetime, nullable=False)
+
+class InstanceHasDelegation(Relationship):
+  label = "instanceHasDelegation"
 
 class PersonDelegation(Relationship):  
   label = "personDelegation"
@@ -153,6 +154,7 @@ class Graph(Neo4jGraph):
     self.delegationProposal =  \
                        self.build_proxy(DelegationProposal)    # Edge: (Delegation -> Proposal)
     self.delegationPerson = self.build_proxy(DelegationPerson) # Edge: (Delegation -> Person)
-
+    self.instanceHasDelegation = \
+                      self.build_proxy(InstanceHasDelegation)
 
 
