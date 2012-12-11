@@ -69,7 +69,9 @@ def getProposals(eid):
 @app.template_filter('getDelegations')
 def getDelegations(eid):
   q='''START i=node({userID}) MATCH i - [:personDelegation] -> hyperEdge , 
-      hyperEdge-[:delegationPerson]->person,hyperEdge -[r?:delegationProposal|delegationParlament]->type  
+      hyperEdge-[:delegationPerson]->person,hyperEdge -[r?:delegationProposal|delegationParlament]->type,
+      instance -[:instanceHasDelegation] -> hyperEdge
+      WHERE ID(instance) ={i_eid} 
       RETURN ID(hyperEdge),hyperEdge.datetime_created,ID(person), person.username,TYPE(r),ID(type),type.title'''
   delegations = db.cypher.table(q,dict(i_eid=eid, userID=session['userId']))[1]
   delegationsDict = [dict(delegationID=p[0],
@@ -270,7 +272,7 @@ def person2Dict(person):
 #delegationProposal -> priorltaet 1
 #delegationParlament -> prioritaet 2
 #nur delegationPerson -> prioritaet 3
-def countVotingWeight(personID,proposalID):
+def countVotingWeight(personID,proposalID,i_eid):
   '''Zaehlt das Stimmgewicht der uebergebenen Person bei dem uerbegebenen Vorschlag.
     Die child_list enthaelt am schluss alle ids der gezaehlten Stimmen.
   '''
@@ -283,7 +285,7 @@ def countVotingWeight(personID,proposalID):
   to_crawl=deque(list(db.vertices.get(personID).inV("delegationPerson")))
   while to_crawl:
     node = to_crawl.popleft()
-    if node.element_type=='delegation':
+    if node.element_type=='delegation' and node.inV('instanceHasDelegation').next().eid==i_eid:
       delegationDetail = list(node.outV())
       #Wenn delegation zu einem Proposal zeigt und dieses auch noch passende Id hat.
       #In meiner ueberlegung die hoechste Prioritaet.
@@ -318,7 +320,7 @@ def affectedVotes():
     '''
   return reduce(operator.add, db.cypher.table(q,dict(userid=session['userId']))[1])
 
-def recalculateAffectedVotes(result):
+def recalculateAffectedVotes(result,i_eid):
   '''Berechnet die uebergebenden Proposals neu'''
   db=Graph()
   for p in result:
@@ -332,9 +334,9 @@ def recalculateAffectedVotes(result):
       countId=p
     for v in votes:
       if v[1]==1:
-        ups+=len(countVotingWeight(v[0],countId))
+        ups+=len(countVotingWeight(v[0],countId,i_eid))
       elif v[1]==0:
-        downs+=len(countVotingWeight(v[0],countId))
+        downs+=len(countVotingWeight(v[0],countId,i_eid))
     c_p=db.vertices.get(p)
     c_p.ups=ups
     c_p.downs=downs
@@ -455,7 +457,7 @@ def vote():
     else:   
       #flash('Erfolgreich dagegen gestimmt')
       pass
-  recalculateAffectedVotes([eid])
+  recalculateAffectedVotes([eid],db.proposals.get(eid).inV('hasProposal').next().eid)
   c_p = db.vertices.get(eid)  
   if c_p.element_type == 'comment':
     proposal = c_p.inV('hasComment').next()
@@ -692,13 +694,14 @@ def delegate():
   #Delete old delegation
   if not delete is None:
     db.client.delete_vertex(delete)
-  def bgrWorker(req,aff):
+
+  def bgrWorker(req,aff,i_eid):
       with app.test_request_context():
         from flask import request
         request = req
-        recalculateAffectedVotes(aff)
+        recalculateAffectedVotes(aff,i_eid)
 
-  thread.start_new_thread(bgrWorker, (request,affected))
+  thread.start_new_thread(bgrWorker, (request,affected,g.i_eid))
   
   list = [
               {'exists': 0}
