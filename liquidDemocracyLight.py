@@ -295,10 +295,10 @@ def countVotingWeight(personID,proposalID,i_eid):
       elif not any(i.eid==proposalID for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationProposal')):
         #Handelt es sich um eine Delegation fuer ein Parlament?
         if any(x.element_type=='parlament' for x in delegationDetail):
-          #Hat das Proposal mehrere Delegationen vom Benutzer?Dann gilt die zuletzt angelegte.
-          parlaments=[(p.eid,p.datetime_created) for p in db.proposals.get(proposalID).outV('proposalHasParlament')]
-          parlaments.sort(key=lambda r: r[1],reverse=True)
-          if not parlaments==[] and node.outV('delegationParlament').next().eid == parlaments[0][0]:
+          #Hat das Proposal mehrere Delegationen(Parlament) vom Benutzer?Dann gilt die zuletzt angelegte.
+          parlamentDelegations=[d for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationParlament') if i in db.proposals.get(proposalID).outV('proposalHasParlament')]
+          parlamentDelegations.sort(key=lambda r: r.datetime_created,reverse=True)
+          if not parlamentDelegations==[] and node == parlamentDelegations[0]:
             to_crawl.extend(list(node.inV('personDelegation')))     
         elif not any(x.element_type=='proposal' for x in delegationDetail):
           to_crawl.extend(list(node.inV('personDelegation')))
