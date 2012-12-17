@@ -396,13 +396,15 @@ def show_single_proposal(prop_id):
 
 @app.route('/<int:i_eid>/addproposal',methods=['POST'])
 def add_proposal():
+
   if not session.get('logged_in'):
     abort(401)
   prop = db.proposals.create(title=request.form['title'], body=request.form['body'], ups=0, downs=0)
-  if 'parlament' in request.form: 
-    p = list(db.parlaments.index.lookup(title=request.form['parlament']))
-    if p: 
-      db.proposalHasParlament.create(prop,p[0])
+  if 'parlament' in request.form:
+    for parl in request.form.getlist('parlament'):
+      p = list(db.parlaments.index.lookup(title=parl))
+      if p: 
+        db.proposalHasParlament.create(prop,p[0])
   instance = db.instances.get(g.i_eid)
   user = db.people.get(session['userId'])
   db.issued.create(user,prop)           # Edge1: User issues Proposal
@@ -435,34 +437,23 @@ def add_comment(prop_id):
 @app.route('/_vote')
 def vote():
   ''' Voting a proposoal or comment with Id eid. Upvote means pro==1, Downvote means pro==0'''
+  if not session.get('logged_in'):
+    abort(401)
   pro=request.args.get('pro',0,type=int)
   eid=request.args.get('eid',0,type=int)
   voted=0
-  if not session.get('logged_in'):
-    abort(401)
   loggedUser = db.people.get(session['userId'])
   c_p = db.vertices.get(eid)             # c_p is a comment or a proposal
   voteRels = [rel for rel in loggedUser.outE('votes') if rel.inV() == c_p]
   if voteRels and voteRels[0].pro!=pro:  # i.e.: user undoes vote => delete Edge
     db.votes.delete(voteRels[0].eid)
-    #flash('Stimme rueckgaengig gemacht')
   if voteRels and voteRels[0].pro==pro:  # i.e.: Voting up/down a second time is not allowed.
     abort(401)
   if not voteRels:                       # i.e.: No "votes"-edge exists => create new "votes"-Edge
     db.votes.create(loggedUser,c_p, pro=pro)
     voted=1
-    if pro: 
-      #flash('Erfolgreich dafuer gestimmt')
-      pass 
-    else:   
-      #flash('Erfolgreich dagegen gestimmt')
-      pass
   recalculateAffectedVotes([eid],db.proposals.get(eid).inV('hasProposal').next().eid)
   c_p = db.vertices.get(eid)  
-  if c_p.element_type == 'comment':
-    proposal = c_p.inV('hasComment').next()
-    #return redirect(url_for('show_single_proposal', prop_id=proposal.eid))
-  #return redirect(url_for('show_proposals'))
 
   list = [
               {'ups': c_p.ups, 'downs': c_p.downs,'voted':voted},
@@ -715,13 +706,13 @@ def deleteDelegation(eid):
   db.client.delete_vertex(eid)
   flash('Delegation geloescht')
   #recalculateAffectedVotes(affected)
-  def bgrWorker(req,aff):
+  def bgrWorker(req,aff,i_eid):
       with app.test_request_context():
         from flask import request
         request = req
-        recalculateAffectedVotes(aff)
+        recalculateAffectedVotes(aff,i_eid)
 
-  thread.start_new_thread(bgrWorker, (request,affected))
+  thread.start_new_thread(bgrWorker, (request,affected,g.i_eid))
   return redirect(url_for('delegateOverview'))
 
 
