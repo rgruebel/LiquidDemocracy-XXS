@@ -103,6 +103,7 @@ class InstanceHasParlament(Relationship):
 
 class Delegation(Node):
   element_type = "delegation"
+  delegation_type = String(nullable=False)
   datetime_created=DateTime(default=current_datetime, nullable=False)
 
 class InstanceHasDelegation(Relationship):

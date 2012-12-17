@@ -15,7 +15,10 @@ PASSWORD = 'bla'
 
 
 db = Graph()
-
+#[d for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationParlament') if i in db.proposals.get(31).outV('proposalHasParlament')]
+#list.sort(key=lambda r: r.datetime_created,reverse=True)
+#node=db.people.get(17).outV("personDelegation").next()
+#[i.title for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationParlament')]
 
 #delegationProposal -> priorltaet 1
 #delegationParlament -> prioritaet 2
@@ -92,25 +95,13 @@ def recalculateAffectedVotes(result):
   return result
 def countVotingWeightOld(generator,votes,prop,result):
 	'''Rekursiver ansatz der obigen Funktion, verworfen wegen bedenken der Rekusrionstiefe'''
-	#any(x.element_type=='parlaments' for x in bla[0].outV())
-	#[i.eid for x in db.people.get(1).outV('personDelegation') for i in x.outV('delegationProposal')]
 	for i in generator:
-		#Pruefen ob delegation bei aktuellem Proposal gueltig ist
 		if i.element_type == 'delegation':
 			for x in i.outV():
-				#Wenn delegation auf aktuellen Vorschlag zeigt(hoechste Prioritaet)
 				if x.eid==prop.eid and x.element_type=='proposal':
-					countVotingWeightOld(i.inV('personDelegation'),votes,prop,result)
-				#Delegation zeigt zu einem Parlament
+					countVotingWeightOld(i.inV('personDelegation'),votes,prop,result)		
 				elif x.element_type=='parlament':
-					#Wenn der User der die delegation erstellt hat keine andere delegation hat welche direkt zum Vorschlag gehen:
-					#if not any(i.eid==prop.eid for x in i.inV('personDelegation').next().outV('personDelegation') for i in x.outV('delegationProposal')):
 					countVotingWeightOld(i.inV('personDelegation'),votes,prop,result)
-						#print [p.title for p in prop.outV('proposalHasParlament')]
-						#print 'hallo'
-						#print list(x.inV())
-						#print i.inV('personDelegation').next().username
-		#Pruefen ob der User bereits selbst gevotet hat
 		elif i.element_type=='person':
 			print i.eid			
 			if i.eid in votes:
@@ -140,3 +131,9 @@ any(p[0]==44 and p[1] == 'parlament' for p in result)
 #print recalculateAffectedVotes()
 #for x in db.delegations.get_all():
 #	db.client.delete_vertex(x.eid)
+def getDelegations(instanceID):
+  for person in db.instances.get(instanceID).outV('hasPeople'):
+    for delegation in person.outV('personDelegation'):
+      print person.username +' delegiert '+delegation.outV('delegationPerson').next().username+' fuer ' +delegation.delegation_type 
+
+

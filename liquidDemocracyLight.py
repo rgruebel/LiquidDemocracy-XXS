@@ -318,7 +318,7 @@ def affectedVotes():
     MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
     WHERE (p.element_type="proposal" or p.element_type="comment") RETURN distinct ID(p)
     '''
-  return reduce(operator.add, db.cypher.table(q,dict(userid=session['userId']))[1])
+  return reduce(operator.add, db.cypher.table(q,dict(userid=session['userId']))[1])#TODO Crahs wenn keine delegation bestehen??
 
 def recalculateAffectedVotes(result,i_eid):
   '''Berechnet die uebergebenden Proposals neu'''
@@ -396,7 +396,6 @@ def show_single_proposal(prop_id):
 
 @app.route('/<int:i_eid>/addproposal',methods=['POST'])
 def add_proposal():
-
   if not session.get('logged_in'):
     abort(401)
   prop = db.proposals.create(title=request.form['title'], body=request.form['body'], ups=0, downs=0)
@@ -670,7 +669,7 @@ def delegate():
   
 
   # Create edges: 
-  delegation = db.delegations.create()
+  delegation = db.delegations.create(delegation_type=span)
   db.instanceHasDelegation.create(db.instances.get(g.i_eid),delegation)
   personDelegationEdge = db.personDelegation.create(db.people.get(session['userId']), delegation)
   delegationPersonEdge = db.delegationPerson.create(delegation, db.people.get(person))
