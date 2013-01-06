@@ -1,5 +1,18 @@
 @import url("basic.css");
 
+
+div.loader {
+display:none;
+position:absolute;
+margin-top:7px;
+background: rgba( 255, 255, 255, .8 ) 
+url(../static/loading.gif)
+50% 50%
+no-repeat;
+height:45px;
+width:60px;
+}
+
 td.votes {
   font-family: 'Courier New';
   font-weight: bold;

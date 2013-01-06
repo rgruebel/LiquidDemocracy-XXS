@@ -286,24 +286,23 @@ def countVotingWeight(personID,proposalID,i_eid):
   while to_crawl:
     node = to_crawl.popleft()
     if node.element_type=='delegation' and node.inV('instanceHasDelegation').next().eid==i_eid:
-      delegationDetail = list(node.outV())
       #Wenn delegation zu einem Proposal zeigt und dieses auch noch passende Id hat.
       #In meiner ueberlegung die hoechste Prioritaet.
-      #if any(x.element_type=='proposal' and x.eid ==proposalID for x in delegationDetail): #
+      delegatorID=node.inV('personDelegation').next().eid
       if node.delegation_type=='proposal' and node.outV('delegationProposal').next().eid == proposalID:
         to_crawl.extend(list(node.inV('personDelegation')))
       #Hat ein andere User eine delegation bekommen welche direkt zum Proposal geht?
-      elif not any(i.eid==proposalID for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationProposal')):
+      elif not hasPropopsalDelegation(delegatorID,proposalID):
+      #elif not any(i.eid==proposalID for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationProposal')):
         #Handelt es sich um eine Delegation fuer ein Parlament?
-        #if any(x.element_type=='parlament' for x in delegationDetail):
         if node.delegation_type=='parlament':
           #Hat das Proposal mehrere Delegationen(Parlament) vom Benutzer?Dann gilt die zuletzt angelegte.
           parlamentDelegations=[d for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationParlament') if i in db.proposals.get(proposalID).outV('proposalHasParlament')]
           parlamentDelegations.sort(key=lambda r: r.datetime_created,reverse=True)
           if not parlamentDelegations==[] and node == parlamentDelegations[0]:
             to_crawl.extend(list(node.inV('personDelegation')))     
-        #elif not any(x.element_type=='proposal' for x in delegationDetail) and not any(d for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationParlament') if i in db.proposals.get(proposalID).outV('proposalHasParlament')):
-        elif node.delegation_type=='all' and not any(d for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationParlament') if i in db.proposals.get(proposalID).outV('proposalHasParlament')):
+        
+        elif node.delegation_type=='all' and not hasParlamentDelegation(delegatorID,proposalID):
           to_crawl.extend(list(node.inV('personDelegation')))
     elif node.element_type=='person':
       #Wenn Person selbst gevotet hat Pfad unterbrechen, ansonsten stimme zaehlen und weiter maschieren
@@ -314,6 +313,25 @@ def countVotingWeight(personID,proposalID,i_eid):
       else:
         pass #User hat bereits gevotet
   return child_list
+
+def hasPropopsalDelegation(user,proposal):
+  q='''START i=node({userid}) MATCH i-[:personDelegation] ->d-[:delegationProposal]->p 
+      RETURN ID(p)'''
+  dele=db.cypher.table(q,dict(userid=user,proposalid=proposal))[1]
+  if any(p[0] == proposal for p in dele):
+    return True
+  else:
+    return False
+
+def hasParlamentDelegation(user,proposal):
+  q='''START i=node({proposalid}),u=node({userid}) 
+    MATCH i-[:proposalHasParlament]->p<-[:delegationParlament|personDelegation*2]-u  
+    RETURN ID(p)'''
+  dele=db.cypher.table(q,dict(userid=user,proposalid=proposal))[1]
+  if any(p for p in dele):
+    return True
+  else:
+    return False
 def affectedVotes():
   '''ueberprueft bei welchen Proposals das Voting neu berechent werden muss beim anlegen oder loeschen einer delegation.
   Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''

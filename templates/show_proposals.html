@@ -46,6 +46,7 @@
       <script type=text/javascript>
       $(function() {
         $('#voteup{{ entry.eid }}').bind('click', function() {
+          $("#loading{{ entry.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ entry.eid }}, 
@@ -59,12 +60,14 @@
               $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_active.png");
             }
             $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_inactive.png");
+            $("#loading{{ entry.eid }}").hide()
           });
           return false;
          });});
 
       $(function() {
         $('#votedown{{ entry.eid }}').bind('click', function() {
+          $("#loading{{ entry.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ entry.eid }}, 
@@ -78,11 +81,14 @@
               $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_active.png");
             }
             $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_inactive.png");
+            $("#loading{{ entry.eid }}").hide()
             
           });
           return false;
          });});
       </script>
+      <div id=loading{{ entry.eid }} class="loader">&nbsp&nbsp&nbsp&nbsp
+      </div>
         <table class=voteCounts>
              <tr>
                <td>
@@ -108,6 +114,7 @@
                </td> <td id=countDown{{ entry.eid }} class=countDown>-{{ entry.downs }}</td>
              </tr>
         </table>
+
       </td> 
       <td> <h3><a href="{{ url_for('show_single_proposal', prop_id=entry.eid) }}"
                    class=propTitle>{{ entry.title }}</a></h3>
