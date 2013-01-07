@@ -452,7 +452,7 @@ def delete_proposal(prop_id):
 def add_comment(prop_id):
   if not session.get('logged_in'):
     abort(401)
-  comment = db.comments.create(title=request.form['title'], body=request.form['body']) 
+  comment = db.comments.create(title=request.form['title'], body=request.form['body'], ups=0, downs=0) 
   user = db.people.get(session['userId'])
   db.issuesComment.create(user,comment) 
   db.hasComment.create(db.proposals.get(prop_id), comment)

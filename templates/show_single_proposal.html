@@ -10,6 +10,8 @@
       <script type=text/javascript>
       $(function() {
         $('#voteup{{ proposal.eid }}').bind('click', function() {
+          $("#loading{{ proposal.eid }}").width($("#voteline{{ proposal.eid }}").width())
+          $("#loading{{ proposal.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ proposal.eid }}, 
@@ -23,12 +25,14 @@
               $("#voteup{{ proposal.eid }}").attr("src", "/static/arrows_up_active.png");
             }
             $("#votedown{{ proposal.eid }}").attr("src", "/static/arrows_down_inactive.png");
-          });
+          }).complete(function() { $("#loading{{ proposal.eid }}").hide() });
           return false;
          });});
 
       $(function() {
         $('#votedown{{ proposal.eid }}').bind('click', function() {
+          $("#loading{{ proposal.eid }}").width($("#voteline{{ proposal.eid }}").width())
+          $("#loading{{ proposal.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ proposal.eid }}, 
@@ -42,11 +46,12 @@
               $("#votedown{{ proposal.eid }}").attr("src", "/static/arrows_down_active.png");
             }
             $("#voteup{{ proposal.eid }}").attr("src", "/static/arrows_up_inactive.png");
-            
-          });
+          }).complete(function() { $("#loading{{ proposal.eid }}").hide() });
           return false;
          });});
       </script>
+      <div id=loading{{ proposal.eid }} class="loader">&nbsp&nbsp&nbsp&nbsp
+      </div>
         <table class=voteCounts>
                <tr><td> 
 
@@ -111,6 +116,8 @@
       <script type=text/javascript>
       $(function() {
         $('#voteup{{ comment.eid }}').bind('click', function() {
+          $("#loading{{ comment.eid }}").width($("#voteline{{ comment.eid }}").width())
+          $("#loading{{ comment.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ comment.eid }}, 
@@ -124,12 +131,14 @@
               $("#voteup{{ comment.eid }}").attr("src", "/static/arrows_up_active.png");
             }
             $("#votedown{{ comment.eid }}").attr("src", "/static/arrows_down_inactive.png");
-          });
+          }).complete(function() { $("#loading{{ comment.eid }}").hide() });
           return false;
          });});
 
       $(function() {
         $('#votedown{{ comment.eid }}').bind('click', function() {
+          $("#loading{{ comment.eid }}").width($("#voteline{{ comment.eid }}").width())
+          $("#loading{{ comment.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
             eid: {{ comment.eid }}, 
@@ -143,11 +152,12 @@
               $("#votedown{{ comment.eid }}").attr("src", "/static/arrows_down_active.png");
             }
             $("#voteup{{ comment.eid }}").attr("src", "/static/arrows_up_inactive.png");
-            
-          });
+          }).complete(function() { $("#loading{{ comment.eid }}").hide() });
           return false;
          });});
       </script>
+      <div id=loading{{ comment.eid }} class="loader">&nbsp&nbsp&nbsp&nbsp
+      </div>
         <table class=voteCounts>
              <tr><td> 
 

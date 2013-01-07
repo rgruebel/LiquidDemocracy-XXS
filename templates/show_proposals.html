@@ -61,8 +61,7 @@
               $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_active.png");
             }
             $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_inactive.png");
-            $("#loading{{ entry.eid }}").hide()
-          });
+          }).complete(function() { $("#loading{{ entry.eid }}").hide() });
           return false;
          });});
 
@@ -82,10 +81,8 @@
             {
               $("#votedown{{ entry.eid }}").attr("src", "/static/arrows_down_active.png");
             }
-            $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_inactive.png");
-            $("#loading{{ entry.eid }}").hide()
-            
-          });
+            $("#voteup{{ entry.eid }}").attr("src", "/static/arrows_up_inactive.png");            
+          }).complete(function() { $("#loading{{ entry.eid }}").hide() });
           return false;
          });});
       </script>
