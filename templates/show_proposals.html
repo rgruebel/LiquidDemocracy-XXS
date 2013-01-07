@@ -42,10 +42,11 @@
          <table> 
     {% endif %}
     <tr>
-      <td class=votes align=center width=50> 
+      <td id=voteline{{ entry.eid }} class=votes align=center width=50> 
       <script type=text/javascript>
       $(function() {
         $('#voteup{{ entry.eid }}').bind('click', function() {
+          $("#loading{{ entry.eid }}").width($("#voteline{{ entry.eid }}").width())
           $("#loading{{ entry.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
@@ -67,6 +68,7 @@
 
       $(function() {
         $('#votedown{{ entry.eid }}').bind('click', function() {
+          $("#loading{{ entry.eid }}").width($("#voteline{{ entry.eid }}").width())
           $("#loading{{ entry.eid }}").show()
           $.getJSON($SCRIPT_ROOT + '/_vote', {
             ieid: {{ g.i_eid }}, 
