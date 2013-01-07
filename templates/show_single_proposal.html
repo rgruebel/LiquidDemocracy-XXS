@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
 <table>
-    <tr><td class=votes align=center width=50> 
+    <tr><td id=voteline{{ proposal.eid }}  class=votes align=center width=50> 
     {% if proposal.username == session.username %} 
          <table style="background-color: #DDDDEE;"> 
     {% else %} 
@@ -112,7 +112,7 @@
     {% else %} 
          <table class=entries>
     {% endif %}
-    <tr><td class=votes align=center width=50> 
+    <tr><td id=voteline{{ comment.eid }}  class=votes align=center width=50> 
       <script type=text/javascript>
       $(function() {
         $('#voteup{{ comment.eid }}').bind('click', function() {
