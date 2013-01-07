@@ -288,30 +288,27 @@ def countVotingWeight(personID,proposalID,i_eid):
     if node.element_type=='delegation' and node.inV('instanceHasDelegation').next().eid==i_eid:
       #Wenn delegation zu einem Proposal zeigt und dieses auch noch passende Id hat.
       #In meiner ueberlegung die hoechste Prioritaet.
-      delegatorID=node.inV('personDelegation').next().eid
+      valid=False
+      delegatorID=node.inV('personDelegation').next()
       if node.delegation_type=='proposal' and node.outV('delegationProposal').next().eid == proposalID:
-        to_crawl.extend(list(node.inV('personDelegation')))
+        valid=True
       #Hat ein andere User eine delegation bekommen welche direkt zum Proposal geht?
-      elif not hasPropopsalDelegation(delegatorID,proposalID):
-      #elif not any(i.eid==proposalID for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationProposal')):
+      elif not hasPropopsalDelegation(delegatorID.eid,proposalID):
         #Handelt es sich um eine Delegation fuer ein Parlament?
         if node.delegation_type=='parlament':
           #Hat das Proposal mehrere Delegationen(Parlament) vom Benutzer?Dann gilt die zuletzt angelegte.
           parlamentDelegations=[d for d in node.inV('personDelegation').next().outV('personDelegation') for i in d.outV('delegationParlament') if i in db.proposals.get(proposalID).outV('proposalHasParlament')]
           parlamentDelegations.sort(key=lambda r: r.datetime_created,reverse=True)
           if not parlamentDelegations==[] and node == parlamentDelegations[0]:
-            to_crawl.extend(list(node.inV('personDelegation')))     
+            valid=True    
         
-        elif node.delegation_type=='all' and not hasParlamentDelegation(delegatorID,proposalID):
-          to_crawl.extend(list(node.inV('personDelegation')))
-    elif node.element_type=='person':
-      #Wenn Person selbst gevotet hat Pfad unterbrechen, ansonsten stimme zaehlen und weiter maschieren
-      if not node.eid in votes:
-        if not node.eid in child_list:
-          child_list.append(node.eid)
-          to_crawl.extend(list(node.inV('delegationPerson')))
-      else:
-        pass #User hat bereits gevotet
+        elif node.delegation_type=='all' and not hasParlamentDelegation(delegatorID.eid,proposalID):
+          valid=True
+      if valid:
+        if not delegatorID.eid in votes:
+          if not delegatorID.eid in child_list:
+            child_list.append(delegatorID.eid)
+            to_crawl.extend(list(delegatorID.inV('delegationPerson')))
   return child_list
 
 def hasPropopsalDelegation(user,proposal):
