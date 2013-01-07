@@ -472,18 +472,40 @@ def vote():
   voteRels = [rel for rel in loggedUser.outE('votes') if rel.inV() == c_p]
   if voteRels and voteRels[0].pro!=pro:  # i.e.: user undoes vote => delete Edge
     db.votes.delete(voteRels[0].eid)
+    votingAction=0
   if voteRels and voteRels[0].pro==pro:  # i.e.: Voting up/down a second time is not allowed.
     abort(401)
   if not voteRels:                       # i.e.: No "votes"-edge exists => create new "votes"-Edge
     db.votes.create(loggedUser,c_p, pro=pro)
     voted=1
-  recalculateAffectedVotes([eid],db.proposals.get(eid).inV('hasProposal').next().eid)
-  c_p = db.vertices.get(eid)  
+    votingAction = -1 if pro == 0 else 1
+  #Komplettes Voting nur dann neu berechnen wenn andere Votings betroffen sind oder Delegationen bestehen.
+  q='''START i=node({userid}) 
+  MATCH i-[:personDelegation|delegationPerson|votes*2..]->e 
+  WHERE (ID(e)={proposalid}) 
+  RETURN distinct id(e)'''
+  outd = db.cypher.table(q,dict(userid=session['userId'],proposalid=eid))[1]
+  if len(outd) >=1 or len(list(loggedUser.inV('delegationPerson'))) >=1:
+    recalculateAffectedVotes([eid],db.proposals.get(eid).inV('hasProposal').next().eid)
+    c_p = db.vertices.get(eid)  
+  else:
+    if pro==1:
+      if votingAction==0:
+        c_p.downs-=1
+      else:
+        c_p.ups+=1
+    elif pro==0:
+      if votingAction==0:
+        c_p.ups-=1
+      else:
+        c_p.downs+=1
+    c_p.save()
+  
 
-  list = [
+  returnList = [
               {'ups': c_p.ups, 'downs': c_p.downs,'voted':voted},
              ]
-  return jsonify(results = list)
+  return jsonify(results = returnList)
 
 @app.route('/<int:i_eid>/login',methods=['POST','GET'])
 def login_instance(): 
