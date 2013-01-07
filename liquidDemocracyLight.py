@@ -272,7 +272,7 @@ def person2Dict(person):
 #delegationProposal -> priorltaet 1
 #delegationParlament -> prioritaet 2
 #nur delegationPerson -> prioritaet 3
-def countVotingWeight(personID,proposalID,i_eid):
+def countVotingWeight(personID,proposalID,i_eid,commentid=None):
   '''Zaehlt das Stimmgewicht der uebergebenen Person bei dem uerbegebenen Vorschlag.
     Die child_list enthaelt am schluss alle ids der gezaehlten Stimmen.
   '''
@@ -280,7 +280,10 @@ def countVotingWeight(personID,proposalID,i_eid):
   #Liste welche die eid jeder gueltigen Person(Stimme) enthaelt
   child_list=[personID]
   #Alle eids welche beim uebergebenen proposalID bereits selbst gevotet haben(pfad der delegation endet dann)
-  votes=[p.eid for p in db.proposals.get(proposalID).inV('votes')]
+  if commentid is not None:
+    votes=[p.eid for p in db.proposals.get(commentid).inV('votes')]
+  else:
+    votes=[p.eid for p in db.proposals.get(proposalID).inV('votes')]
   #Stack der zu zu durchlaufenden nodes, wird erweitert in der Schleife
   to_crawl=deque(list(db.vertices.get(personID).inV("delegationPerson")))
   while to_crawl:
@@ -349,15 +352,17 @@ def recalculateAffectedVotes(result,i_eid):
     singleVotes=db.cypher.table(qVoteOnly,dict(proposalid=p))[1]
     downs=0
     ups=0
+    commentID = None
     if db.proposals.get(p).element_type == 'comment':
+      commentID = db.proposals.get(p).eid
       countId=db.proposals.get(p).inV('hasComment').next().eid
     else:
       countId=p
     for v in delegatedVotes:
       if v[1]==1:
-        ups+=len(countVotingWeight(v[0],countId,i_eid))
+        ups+=len(countVotingWeight(v[0],countId,i_eid,commentID))
       elif v[1]==0:
-        downs+=len(countVotingWeight(v[0],countId,i_eid))
+        downs+=len(countVotingWeight(v[0],countId,i_eid,commentID))
     for v in singleVotes:
       if v[1]==1:
         ups+=v[0]
@@ -486,7 +491,10 @@ def vote():
   RETURN distinct id(e)'''
   outd = db.cypher.table(q,dict(userid=session['userId'],proposalid=eid))[1]
   if len(outd) >=1 or len(list(loggedUser.inV('delegationPerson'))) >=1:
-    recalculateAffectedVotes([eid],db.proposals.get(eid).inV('hasProposal').next().eid)
+    if c_p.element_type=='comment':
+      recalculateAffectedVotes([eid],c_p.inV('hasComment').next().inV('hasProposal').next().eid)
+    else:
+      recalculateAffectedVotes([eid],c_p.inV('hasProposal').next().eid)
     c_p = db.vertices.get(eid)  
   else:
     if pro==1:
@@ -501,6 +509,7 @@ def vote():
         c_p.downs+=1
     c_p.save()
   
+
 
   returnList = [
               {'ups': c_p.ups, 'downs': c_p.downs,'voted':voted},
