@@ -140,4 +140,34 @@
     {% else %}
       <tr><em>Noch keine Vorschläge vorhanden.</em></tr>
   {% endfor %}
+  <div align="right">
+    {% if navigation.currentPage > 1 %}
+      <a href="{{ url_for('show_proposals', page=navigation.currentPage-1) }}"><<</a>
+    {% endif %}
+    {% if navigation.pagessum <=10 %}
+      {% for number in range(1,navigation.pagessum+1) %}
+        {% if navigation.currentPage != number %}
+          <a href="{{ url_for('show_proposals', page=number) }}">{{number}}</a>
+        {% else %}
+          {{number}}
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      {% for number in range(1,11) %}
+      {% if navigation.currentPage > 5 and navigation.currentPage+4 < navigation.pagessum %}
+        {% set number=navigation.currentPage - 5 + number %}
+      {% elif navigation.currentPage+4 >= navigation.pagessum %}
+        {% set number=navigation.pagessum-10+number %}      
+      {% endif %}
+      {% if navigation.currentPage != number %}
+        <a href="{{ url_for('show_proposals', page=number) }}">{{number}}</a>
+      {% else %}
+        {{number}}
+      {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if navigation.currentPage != navigation.pagessum %}
+      <a href="{{ url_for('show_proposals', page=navigation.currentPage+1) }}">>></a>
+    {% endif %}
+  </div>
 {% endblock %}
