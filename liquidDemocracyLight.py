@@ -419,7 +419,7 @@ def show_proposals():
   proposals = []
   userEid = db.people.get(session['userId']).eid if session.get('logged_in') else None
   instance = db.instances.get(g.i_eid)
-  for proposal in orderedProposals('desc',int(skip),int(limit)):
+  for proposal in orderedProposals('desc',g.i_eid,int(skip),int(limit)):
     p = v2Dict(proposal.eid, loggedUserEid=userEid)
     proposals.append(p)
   return render_template('show_proposals.html', entries=proposals,navigation=dict(currentPage=page,pagessum=pagesCount))
@@ -434,18 +434,18 @@ def countProposals():
   else:
     return 0
 
-def orderedProposals(order,lower=None,upper=None):
+def orderedProposals(order,instanceID,lower=None,upper=None):
   if order == 'desc':
-    q = '''START i=node(3) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.ups DESC'''
+    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.ups DESC'''
   elif order == 'asc':
-    q = '''START i=node(3) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.ups'''
+    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.ups'''
   elif order == 'newest':
-    q = '''START i=node(3) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.datetime_created DESC'''
+    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.datetime_created DESC'''
   elif order == 'oldest':
-    q = '''START i=node(3) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.datetime_created'''
+    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.datetime_created'''
   if not lower is None and not upper is None:
     q = q + ' SKIP {lower} LIMIT {upper}'
-  proposals=db.cypher.query(q,dict(lower=lower,upper=upper))
+  proposals=db.cypher.query(q,dict(lower=lower,upper=upper,ieid=instanceID))
   return proposals
 
 
