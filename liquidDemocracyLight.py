@@ -339,8 +339,11 @@ def affectedVotes():
     MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
     WHERE (p.element_type="proposal" or p.element_type="comment") RETURN distinct ID(p)
     '''
-  return reduce(operator.add, db.cypher.table(q,dict(userid=session['userId']))[1])#TODO Crahs wenn keine delegation bestehen??
-
+  affected = db.cypher.table(q,dict(userid=session['userId']))[1]
+  if affected != []:
+    return reduce(operator.add, affected )#TODO Crahs wenn keine delegation bestehen??
+  else:
+    return []
 def recalculateAffectedVotes(result,i_eid):
   '''Berechnet die uebergebenden Proposals neu'''
   db=Graph()
