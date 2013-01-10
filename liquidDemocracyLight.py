@@ -709,24 +709,34 @@ def add_parlament():
 
 
 @app.route('/<int:i_eid>/delegate_overview')
-def delegateOverview():   
+def delegateOverview():
+  if not session.get('logged_in'):
+    abort(401)   
   return render_template('delegate.html', overview=True)
 
 @app.route('/<int:i_eid>/delegate_parlament/<int:parl_eid>')
-def delegateParlament(parl_eid): 
+def delegateParlament(parl_eid):
+  if not session.get('logged_in'):
+    abort(401) 
   parlament = db.parlaments.get(parl_eid)
   return render_template('delegate.html', parlament=parl_eid)
 
 @app.route('/<int:i_eid>/delegate_proposal/<int:pr_eid>')
-def delegateProposal(pr_eid): 
+def delegateProposal(pr_eid):
+  if not session.get('logged_in'):
+    abort(401) 
   return render_template('delegate.html', proposal=pr_eid)
 
 @app.route('/<int:i_eid>/delegate_person/<int:p_eid>')
-def delegatePerson(p_eid): 
+def delegatePerson(p_eid):
+  if not session.get('logged_in'):
+    abort(401) 
   return render_template('delegate.html', person=p_eid)
 
 @app.route('/<int:i_eid>/delegate',methods=['POST'])
 def delegate(): 
+  if not session.get('logged_in'):
+    abort(401)
   postData=werkzeug.urls.url_decode(request.form['param'],'utf-8')
   overwrite=int(request.form['overwrite'])
 
