@@ -1,6 +1,18 @@
 {% extends "layout.html" %}
 {% block body %}
+  <script type=text/javascript>
+  $(document).ready(function(){
+    $("#sort").val("{{navigation.sort}}");
+    {% if session.logged_in %}  
+    $("#filter").val("{{navigation.filter}}");
+    {% endif %}
+  });
+
+
+
+  </script>
   {% if session.logged_in %}
+
     <h2> Neuer Vorschlag </h2>
     <form action="{{ url_for('add_proposal') }}" method=post class=add-entry>
     <table>
@@ -32,9 +44,50 @@
   {% endif %}
   <table> <tr align=bottom>
             <td width=400> <h2> Bisher erstellte Vorschl&auml;ge </h2> </td>
-            <td> Sortierkriterien: 1. Stimmen NeusteZuerst 2. EigeneStimmen <br> 
-                 Filterkriterien: 1. MeineVorschläge 2. MeineStimmen 3. Aktivste</td> </tr>
+            <td>
+              <table> <tr>
+                  <td>
+                    Sortierkriterien:
+                  </td>
+                  <td>
+                        <select class="criteria" id="sort" name="sort" size="1">
+                        <option value="upsdesc">Meisten Stimmen(Pro)</option>
+                        <option value="upsasc">Wenigsten Stimmen(Pro)</option>
+                        <option value="downsdesc">Meisten Stimmen(Contra)</option>
+                        <option value="downsasc">Wenigsten Stimmen(Contra)</option>
+                        <option value="oldest">Ältesten</option>
+                        <option value="newest">Neuesten</0ption>                   
+                      </select>
+                  </td> 
+              {% if session.logged_in %}      
+              </tr>
+              <tr>
+              <td>
+              Filter:
+              </td>   
+               <td>                   
+                    <select class="criteria" id="filter" name="filter" size="1">
+                    <option value="all">Alles</option>
+                    <option value="ownprop">Eigene Vorschläge</option>
+                    <option value="votedprop">Selbst Abgestimmt </option>                  
+                  </select>
+              </td>    
+              </tr>
+              {% endif %}
+              </table> 
+            </td>     
+            <!--<td> Sortierkriterien: 1. Stimmen NeusteZuerst 2. EigeneStimmen <br> 
+                 Filterkriterien: 1. MeineVorschläge 2. MeineStimmen 3. Aktivste</td> </tr>-->
+           </tr>
   </table>
+  <script type=text/javascript>
+
+  $('.criteria').change(function() {
+    var params = { page:1, sort:$('#sort').val(), filter: $('#filter').val() };
+    var str = jQuery.param(params);
+    window.location.href = $SCRIPT_ROOT + '/{{g.i_eid}}/proposals?'+str;
+  });
+  </script>
   {% for entry in entries %}
     {% if entry.username == session.username %} 
          <table  style="background-color: #DDDDEE;"> 

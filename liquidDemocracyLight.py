@@ -8,6 +8,7 @@ import thread
 import re
 import operator
 import time
+import math
 # configuration
 DATABASE = 'graphdatabase'
 DEBUG = True
@@ -409,43 +410,73 @@ def add_instance():
 
 @app.route('/<int:i_eid>/proposals')
 def show_proposals():
-  page=request.args.get('page',1,type=int) 
+  page=request.args.get('page',1,type=int)
+  orderP=request.args.get('sort',"upsdesc",type=str) 
+  filterP=request.args.get('filter',"all",type=str)
+  userEid = db.people.get(session['userId']).eid if session.get('logged_in') else None
 
   propPerPage = 10.
-  proposalCount = float(countProposals())
-  pagesCount = int(round(proposalCount/propPerPage))
+  proposalCount = float(countProposals(filterP,g.i_eid,userEid))
+  pagesCount = int(math.ceil(proposalCount/propPerPage))
   limit = propPerPage*page
   skip =  propPerPage*page - propPerPage
-  proposals = []
-  userEid = db.people.get(session['userId']).eid if session.get('logged_in') else None
+  proposals = []   
   instance = db.instances.get(g.i_eid)
-  for proposal in orderedProposals('desc',g.i_eid,int(skip),int(limit)):
-    p = v2Dict(proposal.eid, loggedUserEid=userEid)
-    proposals.append(p)
-  return render_template('show_proposals.html', entries=proposals,navigation=dict(currentPage=page,pagessum=pagesCount))
+  for proposal in orderedProposals(orderP,filterP,g.i_eid,userEid,int(skip),int(limit)):
+      p = v2Dict(proposal.eid, loggedUserEid=userEid)
+      proposals.append(p)
+  return render_template('show_proposals.html', entries=proposals,navigation=dict(currentPage=page,pagessum=pagesCount,sort=orderP,filter=filterP))
 
 
 
-def countProposals():
-  q = '''START i=node(3) MATCH i-[:hasProposal]->p RETURN count(p)'''
-  numProposals=db.cypher.table(q)[1]
+def countProposals(filterP,instanceID,userEid):
+  if userEid is not None:
+    if filterP == 'all':
+      match = 'MATCH i-[:hasProposal]->p'
+    elif filterP == 'ownprop':
+      match = 'MATCH i-[:hasProposal]->p<-[:issued]-u'
+    elif filterP == 'votedprop':
+      match = 'MATCH i-[:hasProposal]->p<-[:votes]-u'   
+    q = '''START i=node({ieid}),u=node({user}) '''+match+''' RETURN count(p)'''
+  else:
+    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN count(p)'''
+  numProposals=db.cypher.table(q,dict(ieid=instanceID,user=userEid))[1]
   if len(numProposals) == 1:
     return numProposals[0][0]
   else:
     return 0
 
-def orderedProposals(order,instanceID,lower=None,upper=None):
-  if order == 'desc':
-    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.ups DESC'''
-  elif order == 'asc':
-    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.ups'''
-  elif order == 'newest':
-    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.datetime_created DESC'''
-  elif order == 'oldest':
-    q = '''START i=node({ieid}) MATCH i-[:hasProposal]->p RETURN p ORDER BY p.datetime_created'''
+def orderedProposals(orderP,filterP,instanceID,userEid,lower=None,upper=None):
+  if userEid is not None:
+    start='''START i=node({ieid}),u=node({user}) '''
+  else:
+    filterP='all'
+    start='''START i=node({ieid}) '''
+
+  if filterP == 'all':
+    match = 'MATCH i-[:hasProposal]->p'
+  elif filterP == 'ownprop':
+    match = 'MATCH i-[:hasProposal]->p<-[:issued]-u'
+  elif filterP == 'votedprop':
+    match = 'MATCH i-[:hasProposal]->p<-[:votes]-u' 
+
+  if orderP == 'upsdesc':
+    ret=''' RETURN p ORDER BY p.ups DESC'''
+  elif orderP == 'upsasc':
+    ret=''' RETURN p ORDER BY p.ups'''
+  elif orderP == 'downsdesc':
+    ret=''' RETURN p ORDER BY p.downs DESC'''
+  elif orderP == 'downsasc':
+    ret=''' RETURN p ORDER BY p.downs'''
+  elif orderP == 'newest':
+    ret=''' RETURN p ORDER BY p.datetime_created DESC'''
+  elif orderP == 'oldest':
+    ret=''' RETURN p ORDER BY p.datetime_created'''
+    
+  q=start+match+ret  
   if not lower is None and not upper is None:
     q = q + ' SKIP {lower} LIMIT {upper}'
-  proposals=db.cypher.query(q,dict(lower=lower,upper=upper,ieid=instanceID))
+  proposals=db.cypher.query(q,dict(lower=lower,upper=upper,ieid=instanceID,user=userEid))
   return proposals
 
 

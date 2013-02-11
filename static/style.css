@@ -43,6 +43,10 @@ select {
   background-color: #000000;
   color: ivory; 
   }
+select option {
+  background-color: #000000;
+  color: ivory; 
+  }
 
 a.propTitle {
     color: #000000;
