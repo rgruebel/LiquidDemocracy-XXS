@@ -333,6 +333,7 @@ def hasParlamentDelegation(user,proposal):
     return True
   else:
     return False
+
 def affectedVotes():
   '''ueberprueft bei welchen Proposals das Voting neu berechent werden muss beim anlegen oder loeschen einer delegation.
   Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''
@@ -345,7 +346,8 @@ def affectedVotes():
     return reduce(operator.add, affected )#TODO Crahs wenn keine delegation bestehen??
   else:
     return []
-def recalculateAffectedVotes(result,i_eid):
+
+def recalculateAffectedProposals(result,i_eid):
   '''Berechnet die uebergebenden Proposals neu'''
   db=Graph()
   for p in result:
@@ -557,9 +559,9 @@ def vote():
   outd = db.cypher.table(q,dict(userid=session['userId'],proposalid=eid))[1]
   if len(outd) >=1 or len(list(loggedUser.inV('delegationPerson'))) >=1:
     if c_p.element_type=='comment':
-      recalculateAffectedVotes([eid],c_p.inV('hasComment').next().inV('hasProposal').next().eid)
+      recalculateAffectedProposals([eid],c_p.inV('hasComment').next().inV('hasProposal').next().eid)
     else:
-      recalculateAffectedVotes([eid],c_p.inV('hasProposal').next().eid)
+      recalculateAffectedProposals([eid],c_p.inV('hasProposal').next().eid)
     c_p = db.vertices.get(eid)  
   else:
     if pro==1:
@@ -821,7 +823,7 @@ def delegate():
       with app.test_request_context():
         from flask import request
         request = req
-        recalculateAffectedVotes(aff,i_eid)
+        recalculateAffectedProposals(aff,i_eid)
 
   thread.start_new_thread(bgrWorker, (request,affected,g.i_eid))
   
@@ -836,12 +838,12 @@ def deleteDelegation(eid):
   affected=affectedVotes()
   db.client.delete_vertex(eid)
   flash('Delegation geloescht')
-  #recalculateAffectedVotes(affected)
+  #recalculateAffectedProposals(affected)
   def bgrWorker(req,aff,i_eid):
       with app.test_request_context():
         from flask import request
         request = req
-        recalculateAffectedVotes(aff,i_eid)
+        recalculateAffectedProposals(aff,i_eid)
 
   thread.start_new_thread(bgrWorker, (request,affected,g.i_eid))
   return redirect(url_for('delegateOverview'))
