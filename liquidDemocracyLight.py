@@ -537,11 +537,12 @@ def add_proposal():
 
 @app.route('/<int:i_eid>/deleteproposal/<int:prop_id>')
 def delete_proposal(prop_id):
-  if not session.get('logged_in'):
-    abort(401)
   proposal = db.proposals.get(prop_id)
-  for e in proposal.inE('hasProposal'): 
-    db.hasProposal.delete(e.eid) 
+  if not session.get('logged_in') or session['userId'] != proposal.inV('issued').next().eid :
+    abort(401)
+  #Delete proposal delegations
+  for d in proposal.inV('delegationProposal'):
+    db.delegations.delete(d.eid)
   resp = db.proposals.delete(prop_id)
   flash('Eintrag geloescht')
   return redirect(url_for('show_proposals'))
@@ -861,6 +862,9 @@ def delegate():
 
 @app.route('/<int:i_eid>/deleteDelegation/<int:eid>')
 def deleteDelegation(eid):
+  delegation = db.proposals.get(eid)
+  if not session.get('logged_in') or session['userId'] != delegation.inV('personDelegation').next().eid:
+    abort(401)
   affected=affectedVotes()
   db.client.delete_vertex(eid)
   flash('Delegation geloescht')

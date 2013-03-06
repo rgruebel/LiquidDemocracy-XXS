@@ -183,6 +183,8 @@
 <a href="{{ url_for('deleteDelegation',eid=p.delegationID) }}"><img src="{{ url_for('static',filename='delete.png') }}" alt="delete" width=12 align=left></a>
     </td>
   </tr>
+    {% else %}
+      <td colspan="4">Noch keine Delegationen erteilt.</td>
   {% endfor %}
 </table>
     
@@ -220,6 +222,8 @@
 
     </td>
   </tr>
+    {% else %}
+      <td colspan="4">Noch keine Delegationen erhalten</td>
   {% endfor %}
 </table>   
     
