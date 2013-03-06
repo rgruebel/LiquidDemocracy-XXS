@@ -67,10 +67,29 @@ def getProposals(eid):
                           for p in proposals]
   return proposalDict
 
-@app.template_filter('getDelegations')
-def getDelegations(eid):
+@app.template_filter('getGrantedDelegations')
+def getGrantedDelegations(eid):
   q='''START i=node({userID}) MATCH i - [:personDelegation] -> hyperEdge , 
       hyperEdge-[:delegationPerson]->person,hyperEdge -[r?:delegationProposal|delegationParlament]->type,
+      instance -[:instanceHasDelegation] -> hyperEdge
+      WHERE ID(instance) ={i_eid} 
+      RETURN ID(hyperEdge),hyperEdge.datetime_created,ID(person), person.username,TYPE(r),ID(type),type.title'''
+  delegations = db.cypher.table(q,dict(i_eid=eid, userID=session['userId']))[1]
+  delegationsDict = [dict(delegationID=p[0],
+                    delegationCreated = date_diff(datetime.utcfromtimestamp(p[1]), datetime.today()), 
+                    username   = p[3], 
+                    p_eid   = p[2],
+                    delegationtype=p[4],
+                    typeID=p[5],
+                    title=p[6]
+                    )
+                          for p in delegations]              
+  return delegationsDict 
+
+@app.template_filter('getReceivedDelegations')
+def getReceivedDelegations(eid):
+  q='''START i=node({userID}) MATCH i <- [:delegationPerson] - hyperEdge , 
+      hyperEdge<-[:personDelegation]-person,hyperEdge -[r?:delegationProposal|delegationParlament]->type,
       instance -[:instanceHasDelegation] -> hyperEdge
       WHERE ID(instance) ={i_eid} 
       RETURN ID(hyperEdge),hyperEdge.datetime_created,ID(person), person.username,TYPE(r),ID(type),type.title'''
