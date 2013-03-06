@@ -12,6 +12,7 @@ tinyMCE.init({
   <script type=text/javascript>
   $(document).ready(function(){
     $("#sort").val("{{navigation.sort}}");
+    $("#searchfield").val("{{navigation.search}}");
     {% if session.logged_in %}  
     $("#filter").val("{{navigation.filter}}");
     {% endif %}
@@ -65,8 +66,8 @@ tinyMCE.init({
                         <option value="newest">Neuesten</0ption>                   
                       </select>
                   </td> 
-              {% if session.logged_in %}      
               </tr>
+              {% if session.logged_in %}      
               <tr>
               <td>
               Filter:
@@ -80,6 +81,14 @@ tinyMCE.init({
               </td>    
               </tr>
               {% endif %}
+              <tr>
+              <td>
+              Suche:
+              </td>   
+               <td>                   
+                  <input class="criteria" type=text size=17 name="searchfield" id="searchfield">
+              </td>    
+              </tr>              
               </table> 
             </td>     
             <!--<td> Sortierkriterien: 1. Stimmen NeusteZuerst 2. EigeneStimmen <br> 
@@ -87,9 +96,13 @@ tinyMCE.init({
            </tr>
   </table>
   <script type=text/javascript>
-
+  
   $('.criteria').change(function() {
-    var params = { page:1, sort:$('#sort').val(), filter: $('#filter').val() };
+    var params = { page:1, sort:$('#sort').val(), filter: $('#filter').val()};
+     if($('#searchfield').val() !== ''){
+        params["search"]=$('#searchfield').val()
+    };
+    
     var str = jQuery.param(params);
     window.location.href = $SCRIPT_ROOT + '/{{g.i_eid}}/proposals?'+str;
   });

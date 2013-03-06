@@ -415,6 +415,7 @@ def show_proposals():
   page=request.args.get('page',1,type=int)
   orderP=request.args.get('sort',"upsdesc",type=str) 
   filterP=request.args.get('filter',"all",type=str)
+  searchP=request.args.get('search',"",type=str)
   userEid = db.people.get(session['userId']).eid if session.get('logged_in') else None
 
   propPerPage = 10.
@@ -424,10 +425,10 @@ def show_proposals():
   skip =  propPerPage*page - propPerPage
   proposals = []   
   instance = db.instances.get(g.i_eid)
-  for proposal in orderedProposals(orderP,filterP,g.i_eid,userEid,int(skip),int(limit)):
+  for proposal in orderedProposals(orderP,filterP,g.i_eid,userEid,searchP,int(skip),int(limit)):
       p = v2Dict(proposal.eid, loggedUserEid=userEid)
       proposals.append(p)
-  return render_template('show_proposals.html', entries=proposals,navigation=dict(currentPage=page,pagessum=pagesCount,sort=orderP,filter=filterP))
+  return render_template('show_proposals.html', entries=proposals,navigation=dict(currentPage=page,pagessum=pagesCount,sort=orderP,filter=filterP,search=searchP))
 
 
 
@@ -448,7 +449,8 @@ def countProposals(filterP,instanceID,userEid):
   else:
     return 0
 
-def orderedProposals(orderP,filterP,instanceID,userEid,lower=None,upper=None):
+def orderedProposals(orderP,filterP,instanceID,userEid,searchstring,lower=None,upper=None):
+
   if userEid is not None:
     start='''START i=node({ieid}),u=node({user}) '''
   else:
@@ -462,6 +464,11 @@ def orderedProposals(orderP,filterP,instanceID,userEid,lower=None,upper=None):
   elif filterP == 'votedprop':
     match = 'MATCH i-[:hasProposal]->p<-[:votes]-u' 
 
+  if searchstring != '':
+    searchstring="(?i).*"+searchstring+".*"
+    where= ' WHERE p.title =~ {search} OR p.body =~ {search}'
+  else:
+    where=''
   if orderP == 'upsdesc':
     ret=''' RETURN p ORDER BY p.ups DESC'''
   elif orderP == 'upsasc':
@@ -475,10 +482,10 @@ def orderedProposals(orderP,filterP,instanceID,userEid,lower=None,upper=None):
   elif orderP == 'oldest':
     ret=''' RETURN p ORDER BY p.datetime_created'''
     
-  q=start+match+ret  
+  q=start+match+where+ret  
   if not lower is None and not upper is None:
     q = q + ' SKIP {lower} LIMIT {upper}'
-  proposals=db.cypher.query(q,dict(lower=lower,upper=upper,ieid=instanceID,user=userEid))
+  proposals=db.cypher.query(q,dict(lower=lower,upper=upper,ieid=instanceID,user=userEid,search=searchstring))
   return proposals
 
 
