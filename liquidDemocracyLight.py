@@ -335,6 +335,7 @@ def countVotingWeight(personID,proposalID,i_eid,commentid=None):
   return child_list
 
 def hasPropopsalDelegation(user,proposal):
+  db=Graph()
   q='''START i=node({userid}) MATCH i-[:personDelegation] ->d-[:delegationProposal]->p 
       RETURN ID(p)'''
   dele=db.cypher.table(q,dict(userid=user,proposalid=proposal))[1]
@@ -344,6 +345,7 @@ def hasPropopsalDelegation(user,proposal):
     return False
 
 def hasParlamentDelegation(user,proposal):
+  db=Graph()
   q='''START i=node({proposalid}),u=node({userid}) 
     MATCH i-[:proposalHasParlament]->p<-[:delegationParlament|personDelegation*2]-u  
     RETURN ID(p)'''
@@ -356,6 +358,7 @@ def hasParlamentDelegation(user,proposal):
 def affectedVotes():
   '''ueberprueft bei welchen Proposals das Voting neu berechent werden muss beim anlegen oder loeschen einer delegation.
   Beim erstellen:delegation erst erstellen dann Voting neu berechnen'''
+  db=Graph()
   q=  '''START i=node({userid}) 
     MATCH i-[:personDelegation*]->x-[:delegationPerson|personDelegation|votes*] ->p 
     WHERE (p.element_type="proposal" or p.element_type="comment") RETURN distinct ID(p)

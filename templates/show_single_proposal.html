@@ -7,6 +7,7 @@
     {% else %} 
          <table> 
     {% endif %}
+
       <script type=text/javascript>
       $(function() {
         $('#voteup{{ proposal.eid }}').bind('click', function() {
@@ -75,7 +76,7 @@
            </table>
           </td> <td><h3><a href="{{ url_for('show_single_proposal', i_eid=g.i_eid, prop_id=proposal.eid) }}"
                            class=propTitle>{{ proposal.title }}</a></h3>
-                                                                                           {{ proposal.body|safe }} </td>
+               {{ proposal.body|safe }}</td>
     <tr>  <td> </td> <td><div class=propInfo>
             <a href="{{ url_for('delete_proposal', i_eid=g.i_eid, prop_id=proposal.eid) }} ">l&ouml;schen</a> 
             <a href="">editieren</a>
